@@ -27,7 +27,7 @@
 #    ParseError                                  #
 #================================================#
 #
-# Copyright (C) 2011 Fredrik Boulund
+# Copyright (C) 2012 Fredrik Boulund
 #
 # HERE WILL BE LICENSE INFORMATION
 
