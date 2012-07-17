@@ -1,0 +1,79 @@
+Changelog
+=========
+
+2012-07-17  Fredrik Boulund, version 0.8067 beta
+
+	* Lots of small fixes.
+	* Introduced new --minlength and --minscore parameters.
+	* Updated default parameter values of k, m, d, and minlength.
+
+2012-05-02  Fredrik Boulund, version 0.8055 beta
+
+	* Updated classification function default parameters according to new PSO
+	  based optimization.
+
+2012-02-10  Fredrik Boulund, version 0.7055 beta
+
+	* Small fixes here and there, minor things.
+
+2011-07-18  Fredrik Boulund, version 0.7043 beta
+
+	* Fixed two or three very low key bugs where parsing of the hmmsearch
+	  output would not work as intended when HMMER found a hit above inclusion
+	  threshold that contained no domains above inclusion threshold.
+
+2011-07-13  Fredrik Boulund, version 0.7042 beta
+
+	* Fixed a nasty hidden bug where a fragment would be classified twice with
+	  different apparent sequence length giving different results, causing an 
+	  error.
+	* Fixed a bug where the pipeline would spew out errors trying to retrieve
+	  sequences from a database without cdbfasta index (*.cidx). Now it skips
+	  all sequences that should be retrieved from such databases.
+
+2011-07-12  Fredrik Boulund, version 0.7030 beta
+
+	* Fixed low-profile bug with parsing of hmmsearch aligned domains where,
+	  when extending a match, sometimes it would retrieve too much of the source
+	  sequence.
+	* Fixed obscure bug where lowscoring domains were never subjected to
+	  classification function
+	* Pipeline can now retrieve full-length sequences from source database file
+	  using cdbfasta/cdbyank.
+	* Added option (-A) to run only the alignment step. Trying to run all steps
+	  using their "only"-option (-HELA) will run the entire pipeline.
+	* Added summary statistics to the pipeline output after successful complete
+	  run.
+	* Fixed an error related to parsing of HMMER;hmmsearch output.
+	* Modified the name of clusterfiles, removed unnecessary "malign".
+	* Changed so that MAFFT decides what algorithm to use for alignment since
+	  forcing MAFFT to use 'linsi' made the pipeline stop in some cases.
+	* Added log-messages when skipping parts of the pipeline.
+	* Added option to extract extended parts of sequences (--extendleft and 
+	  --extendright) using cdbfasta/cdbyank.
+	* Hardcoded a minimum fragment length of 10 amino acids because blastclust
+	  can't handle to cluster very short fragments, this is no problem since the
+	  power at such short fragment lengths is too low to be useful anyway.
+	* Fixed so that the pipeline no longer overwrites old log output.
+	* Fixed robustness issues with MAFFT and blastclust.
+	* Fixed pipeline crash if the pipeline found no model to use.
+	* Pipeline now flushes the log output more often at strategic positions.
+	* 73 minor syntactical and error handling fixes.
+	* Added settings display in log output.
+	* Added classification function feature.
+	* Created an "advanced options" grouping in the help listing.
+	* Fixed issue with number of sequences parsed from hmmsearch output not
+	  being logged properly.
+	* Logfile is no longer created if pipeline is run without arguments.
+	* Logfile now prints date and time.
+	* fluff.py;parse_hmmsearch can now handle when there are no hits.
+	* Fixed bug with blastclust output diagnostic text not showing up in log.
+	* Fixed logfile printing to disk.
+	* Fixed bug with origin source marking of sequences when the database 
+	  filename contains no dots.
+	* Fixed bug with a FASTA formatting.
+	* Improved the origin source marking of sequences (two levels).
+
+2010-07-26  Fredrik Boulund, version 0.6389 beta
+
+	* First release.
