@@ -7,6 +7,8 @@ Changelog
 	* Introduced new --minlength and --minscore command line options.
 	* Changed default parameter values of k, m, d, and minlength to;
 	  0.7778, -7.89, 150.64, 25, respectively.
+	* Updated the help text to include integer, float and boolean where 
+	  applicable.
 
 2012-05-02  Fredrik Boulund, version 0.8055 beta
 
