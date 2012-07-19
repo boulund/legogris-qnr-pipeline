@@ -3,9 +3,10 @@ Changelog
 
 2012-07-17  Fredrik Boulund, version 0.8067 beta
 
-	* Lots of small fixes.
-	* Introduced new --minlength and --minscore parameters.
-	* Updated default parameter values of k, m, d, and minlength.
+	* Several small fixes.
+	* Introduced new --minlength and --minscore command line options.
+	* Changed default parameter values of k, m, d, and minlength to;
+	  0.7778, -7.89, 150.64, 25, respectively.
 
 2012-05-02  Fredrik Boulund, version 0.8055 beta
 

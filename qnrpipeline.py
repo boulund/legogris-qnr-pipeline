@@ -53,7 +53,7 @@ parser = OptionParser(usage=" %prog [options] DATABASE(s)\n"\
 
 # Create the standard options and add the to the OptionParser
 parser.add_option("-n", "--numcpu", dest="numcpu",metavar="N",
-                 help="the number of CPUs, N, to use for programs with that ability [default: N=%default]")
+                 help="integer - the number of CPUs, N, to use for programs with that ability [default: N=%default]")
 parser.add_option("-M", "--hmm", dest="model",
                  help="the MODEL to use in hmmsearch [default: %default]")
 parser.add_option("-H", "--hmmsearchonly", action="store_true", dest="hmmsearch",
@@ -65,17 +65,17 @@ parser.add_option("-L", "--clusteringonly", action="store_true", dest="blastclus
 parser.add_option("-A", "--alignmentonly", action="store_true", dest="alignment",
                  help="boolean - only perform alignment of sequences within previously created clusters. Can be combined with option -L (e.g. -LA). [default: %default]")
 parser.add_option("-p", "--percentidentity", dest="percent_identity",metavar="PI",
-                 help="the percent identity, PI, with which blastclust will perform the clustering, range 3-100 [default: PI=%default]")
+                 help="integer - the percent identity, PI, with which blastclust will perform the clustering, range 3-100 [default: PI=%default]")
 parser.add_option("-C", "--coveragethreshold", dest="cov_threshold",metavar="CT",
-                 help="the length coverage threshold, CT, used in blastclust, range 0.1-0.99 [default: CT=%default]")
+                 help="float - the length coverage threshold, CT, used in blastclust, range 0.1-0.99 [default: CT=%default]")
 parser.add_option("-k", "--classifyK", dest="classifyK", metavar="k", type="float",
-                 help="modify the classification function parameter slope [default: k=%default]")
-parser.add_option("-m", "--classifyM", dest="classifyM", metavar="m", type="int",
-                 help="modify the classification function parameter intercept [default: m=%default]")
+                 help="float - modify the classification function parameter slope [default: k=%default]")
+parser.add_option("-m", "--classifyM", dest="classifyM", metavar="m", type="float",
+                 help="float - modify the classification function parameter intercept [default: m=%default]")
 parser.add_option("-c", "--classifyC", dest="classifyC", metavar="c", type="float",
-                 help="modify the classification function parameter long sequence fixed cutoff [default: c=%default]")
-parser.add_option("-d", "--classifyD", dest="classifyD", metavar="d", type="int",
-                 help="modify the classification function parameter definition of long sequence (i.e. after what fragment length to use fixed cutoff) [default: d=%default]")
+                 help="float - modify the classification function parameter long sequence fixed cutoff [default: c=%default]")
+parser.add_option("-d", "--classifyD", dest="classifyD", metavar="d", type="float",
+                 help="float - modify the classification function parameter definition of long sequence (i.e. after what fragment length to use fixed cutoff) [default: d=%default]")
 parser.add_option("-a", "--addrefseq", dest="addrefseq", metavar="PATH",
                  help="add reference database with sequences in FASTA format at PATH. These sequences are added before clustering to improve/simplify cluster analysis. [default: not used]")
 
@@ -87,13 +87,13 @@ advanced.add_option("-s", "--noheuristics", action="store_true", dest="noheurist
 advanced.add_option("-D", "--retrdb", action="store_true", dest="retrdb",
                  help="boolean - retrieve sequences from original database and not from hmmsearch output file. Slower and not 'safe' for clustering or alignment. Requires a cdbfasta index file for each database [default: %default]")
 advanced.add_option("-l", "--extendleft", dest="extendleft",
-                 help="An integer number of residues/nucleotides to extend the HMMER aligned domain with to the left. Requires a cdbfasta index file for each database [default: not used]")
+                 help="integer - number of residues/nucleotides to extend the HMMER aligned domain with to the left. Requires a cdbfasta index file for each database [default: not used]")
 advanced.add_option("-r", "--extendright", dest="extendright",
-                 help="An integer number of residues/nucleotides to extend the HMMER aligned domain with to the right. Requires a cdbfasta index file for each database [default: not used]")
+                 help="integer - number of residues/nucleotides to extend the HMMER aligned domain with to the right. Requires a cdbfasta index file for each database [default: not used]")
 advanced.add_option("--minlength", dest="minlength",
-                 help="The minimum fragment length allowed, anything below this will be rejected by the classifier [default: %default]")
+                 help="integer - minimum fragment length allowed, anything below this will be rejected by the classifier [default: %default]")
 advanced.add_option("--minscore", dest="minscore",
-                 help="The minimum fragment bit score from HMMER3, anything below this will be excluded when parsing the HMMER3 output [default: %default]")
+                 help="integer - minimum fragment bit score from HMMER3, anything below this will be excluded when parsing the HMMER3 output [default: %default]")
 
 # Developer options group
 developer = OptionGroup(parser, "Developer options, use at own risk!",
