@@ -843,6 +843,7 @@ if options.blastclust:
         print "Could not uniqueify the sequence IDs!"
         logfile.write("Could not uniqueify the sequence IDs!\n")
         fluff.cleanup(TMPDIR)
+        exit(1)
 
 
     # Run formatdb on the file outputted from uniqueify_seqids and 
@@ -884,6 +885,7 @@ if options.blastclust:
         print e.message, "\n", UnSeqFilename
         logfile.write(e.message+"\n"+UnSeqFilename+"\n")
         fluff.cleanup(TMPDIR)
+        exit(1)
 
 
     # Parse output from blastclust (and de-uniqueify sequences IDs -- not needed anymore)
@@ -894,10 +896,12 @@ if options.blastclust:
         print e.message, "\n", blastclustoutputfile
         logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
         fluff.cleanup(TMPDIR)
+        exit(1)
     except ValueError:
         print "ERROR: Found nothing in blastclust output:", blastclustoutputfile
         logfile.write("ERROR: Found nothing in blastclust output: "+blastclustoutputfile+"\n")
         fluff.cleanup(TMPDIR)
+        exit(1)
     
     # Deunique:ify sequence IDs parsed from blastclust output,
     # needed only for writing out cluster scores later on
@@ -1028,6 +1032,7 @@ if options.alignment:
                 print "Could not align sequences using 'mafft'. Is MAFFT properly installed?"
                 logfile.write("Could not align sequences using 'mafft'. Is MAFFT properly installed?\n")
                 fluff.cleanup(TMPDIR)
+                exit(1)
             else:
                 print ("Multiple alignments complete\n" \
                        "MAFFT alignments are in files " \
@@ -1053,6 +1058,7 @@ if options.alignment:
                 print "Could not align sequences using 'mafft'. Is MAFFT properly installed?"
                 logfile.write("Could not align sequences using 'mafft'. Is MAFFT properly installed?\n")
                 fluff.cleanup(TMPDIR)
+                exit(1)
             else:
                 print ("Multiple alignments complete\n"\
                        "MAFFT alignments are in files "\
