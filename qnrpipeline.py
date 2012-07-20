@@ -842,7 +842,7 @@ if options.blastclust:
     except ValueError:
         print "Could not uniqueify the sequence IDs!"
         logfile.write("Could not uniqueify the sequence IDs!\n")
-        fluff.cleanup(1)
+        fluff.cleanup(TMPDIR)
 
 
     # Run formatdb on the file outputted from uniqueify_seqids and 
@@ -883,7 +883,7 @@ if options.blastclust:
     except fluff.PathError, e:
         print e.message, "\n", UnSeqFilename
         logfile.write(e.message+"\n"+UnSeqFilename+"\n")
-        fluff.cleanup(1)
+        fluff.cleanup(TMPDIR)
 
 
     # Parse output from blastclust (and de-uniqueify sequences IDs -- not needed anymore)
@@ -893,11 +893,11 @@ if options.blastclust:
     except fluff.PathError, e:
         print e.message, "\n", blastclustoutputfile
         logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
-        exit(1)
+        fluff.cleanup(TMPDIR)
     except ValueError:
         print "ERROR: Found nothing in blastclust output:", blastclustoutputfile
         logfile.write("ERROR: Found nothing in blastclust output: "+blastclustoutputfile+"\n")
-        exit(1) 
+        fluff.cleanup(TMPDIR)
     
     # Deunique:ify sequence IDs parsed from blastclust output,
     # needed only for writing out cluster scores later on
@@ -912,12 +912,11 @@ if options.blastclust:
     except IOError:
         print "Could not read the pickled high-scoring sequences (pickled.hsseq)"
         logfile.write("Could not read the pickled high-scoring sequences (pickled.hsseq)\n")
-        exit(1)
+        fluff.cleanup(TMPDIR)
     except pickle.UnpicklingError:
         print "Could not unpickle pickled.hsseq!"
         logfile.write("Could not unpickle pickled.hsseq!\n")
-        exit(1)
-    
+        fluff.cleanup(TMPDIR)
     
     # Output the identified cluster to files,
     # one with clean clusters and one with scores
@@ -993,11 +992,11 @@ if options.alignment:
     except IOError:
         print "Could not read the pickled clusters (pickled.clusters)"
         logfile.write("Could not read the pickled clusters (pickled.clusters)\n")
-        exit(1)
+        fluff.cleanup(TMPDIR)
     except pickle.UnpicklingError:
         print "Could not unpickle pickled.clusters!"
         logfile.write("Could not unpickle pickled.clusters!\n")
-        exit(1)
+        fluff.cleanup(TMPDIR)
     
     try:
         # If QNR_REFERENCE_SEQUENCES_PATH is invalid, do not align against
@@ -1029,7 +1028,6 @@ if options.alignment:
                 print "Could not align sequences using 'mafft'. Is MAFFT properly installed?"
                 logfile.write("Could not align sequences using 'mafft'. Is MAFFT properly installed?\n")
                 fluff.cleanup(TMPDIR)
-                exit(1)
             else:
                 print ("Multiple alignments complete\n" \
                        "MAFFT alignments are in files " \
@@ -1055,7 +1053,6 @@ if options.alignment:
                 print "Could not align sequences using 'mafft'. Is MAFFT properly installed?"
                 logfile.write("Could not align sequences using 'mafft'. Is MAFFT properly installed?\n")
                 fluff.cleanup(TMPDIR)
-                exit(1)
             else:
                 print ("Multiple alignments complete\n"\
                        "MAFFT alignments are in files "\
