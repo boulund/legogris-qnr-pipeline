@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2012-07-20  Fredrik Boulund, version 0.8067 beta
+
+	* Included copyright text and disclaimer on warranty.
+
 2012-07-17  Fredrik Boulund, version 0.8067 beta
 
 	* Several small fixes.

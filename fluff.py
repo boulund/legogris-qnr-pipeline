@@ -1,7 +1,7 @@
 #================================================#
 # fluff.py                                       #
 # Author: Fredrik Boulund                        #
-# Date: 2012-07-17                               #
+# Date: 2012-07-20                               #
 # Version 96                                     #
 #                                                #
 #   Contains the following functions:            #
@@ -22,14 +22,15 @@
 #    retrieve_sequences_from_fasta               #
 #    cleanup                                     #
 #                                                #
-#   Contains the following custom exceptions:    #
+#   Contains the following exceptions:           #
 #    PathError                                   #
 #    ParseError                                  #
 #================================================#
-#
 # Copyright (C) 2012 Fredrik Boulund
 #
-# HERE WILL BE LICENSE INFORMATION
+# THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 
 

@@ -2,7 +2,7 @@
 # Program : qnrpipeline.py
 # Author  : Fredrik Boulund 
 # Creation date: 2010-07-26
-# Release date: 2012-0?-??
+# Release date: 2012-07-20
 # Dependencies:
 #   blastclust
 #   fluff.py(c)
@@ -17,7 +17,9 @@
 #
 # Copyright (C) 2012 Fredrik Boulund
 #
-# HERE WILL BE LICENSE INFORMATION 
+# THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 from sys import argv, exit
 from os import path, makedirs, system
@@ -29,7 +31,7 @@ import pickle
 import shlex, subprocess
 from optparse import OptionParser, OptionGroup
 
-ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-16
+ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
 desc = "-"*fill_length+ver+"-"*fill_length+"""
 Input database(s) in FASTA format and the pipeline will search them with HMMer's "hmmsearch" using the model specified.
