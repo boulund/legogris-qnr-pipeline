@@ -10,10 +10,10 @@
 #   MAFFT
 #   cdbfasta / cdbyank
 #
-#   This file is the main component of a pipeline that searches databases using 
+# This file is the main component of a pipeline that searches databases using 
 # HMMER to find sequences matching a hidden Markov model. These sequences are 
-# then clustered and aligned against each other to simplify identification of new 
-# gene variants and maybe even new genes entirely.
+# then clustered and aligned against each other to simplify identification of 
+# new gene variants and maybe even new genes entirely.
 #
 # Copyright (C) 2012 Fredrik Boulund
 #
