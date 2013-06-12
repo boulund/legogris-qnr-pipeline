@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Program : qnrpipeline.py
-# Author  : Fredrik Boulund 
+# Author  : Fredrik Boulund
 # Creation date: 2010-07-26
 # Release date: 2012-07-20
 # Dependencies:
@@ -10,9 +10,9 @@
 #   MAFFT
 #   cdbfasta / cdbyank
 #
-# This file is the main component of a pipeline that searches databases using 
-# HMMER to find sequences matching a hidden Markov model. These sequences are 
-# then clustered and aligned against each other to simplify identification of 
+# This file is the main component of a pipeline that searches databases using
+# HMMER to find sequences matching a hidden Markov model. These sequences are
+# then clustered and aligned against each other to simplify identification of
 # new gene variants and maybe even new genes entirely.
 #
 # Copyright (C) 2012 Fredrik Boulund
@@ -38,8 +38,8 @@ Input database(s) in FASTA format and the pipeline will search them with HMMer's
 This pipeline is dependent on the following external parts:
 HMMER, BLASTclust, MAFFT, fluff.py(c), cdbfasta/cdbyank.
 ------------------------------------------------------------------------------
-If you use this pipeline in your research, please cite:                       
-Boulund et al. 2012. 
+If you use this pipeline in your research, please cite:
+Boulund et al. 2012.
 The project website is located at http://bioinformatics.math.chalmers.se/qnr/
 ------------------------------------------------------------------------------
 """
@@ -48,7 +48,7 @@ parser = OptionParser(usage=" %prog [options] DATABASE(s)\n"\
                             "examples:\n"\
                             " %prog -M ~/model.hmm ~/database1.fasta ~/database2.fasta \n"\
                             " %prog -EL ~/hmmsearchresults/database1.fasta.hmmsearched--2010-07-04 -C 0.25 -P 85",
-                            description=desc, version=ver) 
+                            description=desc, version=ver)
 
 # Create the standard options and add the to the OptionParser
 parser.add_option("-n", "--numcpu", dest="numcpu",metavar="N",
@@ -115,7 +115,7 @@ parser.set_defaults(numcpu = 4,
                     noheuristics = False,
                     resdir = "./results_clusters/",
                     hmmsearch = False,  # "inverted"
-                    extracthits = False, # "inverted" 
+                    extracthits = False, # "inverted"
                     blastclust = False, # "inverted"
                     alignment = False, # "inverted"
                     percent_identity = "90",
@@ -146,7 +146,7 @@ try:
     t = time.asctime(time.localtime())
     logfile = open('qnrsearch.log','a')
     if logfile.tell() == 0:
-        print "Logfile 'qnrsearch.log' created on",t 
+        print "Logfile 'qnrsearch.log' created on",t
         logfile.write("Logfile 'qnrsearch.log' created on "+t+"\n")
     else:
         print "Logging to 'qnrsearch.log' started on",t
@@ -158,145 +158,95 @@ except IOError:
 print "\n     -----=====[ ",parser.version," ]=====-----\n\nAssigned work:"
 logfile.write("\n     -----=====[  "+parser.version+"  ]=====-----\n\nAssigned work:\n")
 
+NFILES = 0
+
+def create_resdir(options):
+    if not path.isdir(path.abspath(options.resdir)):
+        makedirs(options.resdir)
+        print options.resdir,"created..."
+        logfile.write(options.resdir+" created...\n")
+    else:
+        print options.resdir,"already exists, possibly overwriting contents, continuing..."
+        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
+
+def check_args():
+    global NFILES
+    if options.extracthits and not options.hmmsearch:
+        message = "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
+    else:
+        message = "ERROR! Needs filename(s) for database(s) to search"
+    # Check for filename arguments
+    if args == ['-']:
+        print message
+        logfile.write(message + "\n")
+        parser.print_help()
+        exit(1)
+    elif len(args) != 0:
+        NFILES = len(args)
+        print NFILES,"nfiles"
+    else:
+        print message
+        logfile.write(message + "\n")
+        parser.print_help()
+        exit(1)
 
 ## INITIALIZATION, PATH CREATION ETC - - - - - - - - - - - - - - - - - - - - - -
-# This is a very big messy pile of if, elif, else statements... As long as it 
+# This is a very big messy pile of if, elif, else statements... As long as it
 # works as intended, I don't feel like refactoring it :).
 # Only run HMMsearch. -H
 if options.hmmsearch and not(options.extracthits or options.blastclust or options.alignment):
-    # Check for filename arguments
-    if len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for database(s) to search"
-        logfile.write("ERROR! Needs filename(s) for database(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Only perform hmmsearch\n"
     logfile.write("Only perform hmmsearch\n")
     options.extracthits = False
     options.blastclust = False
     options.alignment = False
-    if not path.isdir(path.abspath(options.hmmsearch_outdir)):
-        makedirs(options.hmmsearch_outdir)
-        print options.hmmsearch_outdir,"created..."
-        logfile.write(options.hmmsearch_outdir+" created...\n")
-    else:
-        print options.hmmsearch_outdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.hmmsearch_outdir+" already exists, possibly overwriting contents, continuing...\n")
 
 # BOTH run HMMsearch and extract hits, don't cluster or align. -HE
 elif (options.hmmsearch and options.extracthits) and not(options.blastclust or options.alignment):
-    # Check for filename arguments
-    if len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for database(s) to search"
-        logfile.write("ERROR! Needs filename(s) for database(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Perform hmmsearch and extract hits\n"
     logfile.write("Perform hmmsearch and extract hits\n")
     options.extracthits = True
     options.blastclust = False
     options.alignment = False
-    if not path.isdir(path.abspath(options.hmmsearch_outdir)):
-        makedirs(options.hmmsearch_outdir)
-        print options.hmmsearch_outdir,"created..."
-        logfile.write(options.hmmsearch_outdir+" created...\n")
-    else:
-        print options.hmmsearch_outdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.hmmsearch_outdir+" already exists, possibly overwriting contents, continuing...\n")
-    
+
 # Extract hits from hmmsearch AND run clustering, do not align clusters. -EL
 elif (options.extracthits and options.blastclust) and not(options.hmmsearch or options.alignment):
-    # Check for filename arguments
-    if len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
-        logfile.write("ERROR! Needs filename(s) for hmmsearch output file(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Extract hits from hmmsearch output AND cluster the sequences AND align clusters\n"
     logfile.write("Extract hits from hmmsearch output AND cluster the sequences AND align clusters\n")
     options.hmmsearch = False
     options.alignment = False
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
-    
+    create_resdir(options)
+
 # HMMsearch, extract hits and cluster, don't align. -HEL
 elif (options.hmmsearch and options.extracthits and options.blastclust) and not(options.alignment):
-    # Check for filename arguments
-    if len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for database(s) to search"
-        logfile.write("ERROR! Needs filename(s) for database(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Perform hmmsearch, extract hits and cluster\n"
     logfile.write("Perform hmmsearch, extract hits and cluster\n")
     options.extracthits = True
     options.blastclust = True
     options.alignment = False
-    if not path.isdir(path.abspath(options.hmmsearch_outdir)):
-        makedirs(options.hmmsearch_outdir)
-        print options.hmmsearch_outdir,"created..."
-        logfile.write(options.hmmsearch_outdir+" created...\n")
-    else:
-        print options.hmmsearch_outdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.hmmsearch_outdir+" already exists, possibly overwriting contents, continuing...\n")
 
 # Extract hits from hmmsearch AND run clustering AND align clusters. -ELA
 elif (options.extracthits and options.blastclust and options.alignment) and not(options.hmmsearch):
-    # Check for filename arguments
-    if len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
-        logfile.write("ERROR! Needs filename(s) for hmmsearch output file(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Extract hits from hmmsearch output AND cluster the sequences\n"
     logfile.write("Extract hits from hmmsearch output AND cluster the sequences\n")
     options.hmmsearch = False
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
+    create_resdir(options)
 
 # Only extract hits from hmmsearch output. -E
 elif options.extracthits and not(options.hmmsearch or options.blastclust or options.alignment):
-    # Check for filename arguments
-    if len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
-        logfile.write("ERROR! Needs filename(s) for hmmsearch output file(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Only extract hits from hmmsearch output\n"
     logfile.write("Only extract hits from hmmsearch output\n")
     options.hmmsearch = False
     options.blastclust = False
     options.alignment = False
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
-    
+    create_resdir(options)
+
 # Only run clustering on pre-existing files. -L
 elif options.blastclust and not(options.hmmsearch or options.extracthits or options.alignment):
     print "Only performing clustering\n"
@@ -304,13 +254,7 @@ elif options.blastclust and not(options.hmmsearch or options.extracthits or opti
     options.hmmsearch = False
     options.extracthits = False
     options.alignment = False
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
+    create_resdir(options)
 
 # Only run clustering on pre-existing files AND align clusters. -LA
 elif (options.blastclust and options.alignment) and not(options.hmmsearch or options.extracthits):
@@ -318,13 +262,7 @@ elif (options.blastclust and options.alignment) and not(options.hmmsearch or opt
     logfile.write("Only performing clustering and cluster alignment\n")
     options.hmmsearch = False
     options.extracthits = False
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
+    create_resdir(options)
 
 # Only run alignment of pre-existing clusters. -A
 elif options.alignment and not(options.hmmsearch or options.extracthits or options.blastclust):
@@ -333,42 +271,22 @@ elif options.alignment and not(options.hmmsearch or options.extracthits or optio
     options.hmmsearch = False
     options.extracthits = False
     options.blastclust = False
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
+    create_resdir(options)
 
 # If no "only" options were set, run entire pipeline! -HELA
 elif (not(options.hmmsearch) and not(options.blastclust) and not(options.extracthits) and not(options.alignment)) or (options.hmmsearch and options.blastclust and options.extracthits and options.alignment):
-    # Check for filename arguments
-    if args == ['-']:
-        print "ERROR! Needs filename(s) for database(s) to search"
-        logfile.write("ERROR! Needs filename(s) for database(s) to seach\n")
-        parser.print_help()
-        exit(1)
-    elif len(args) != 0:
-        NFILES = len(args)
-    else:
-        print "ERROR! Needs filename(s) for database(s) to search"
-        logfile.write("ERROR! Needs filename(s) for database(s) to search\n")
-        parser.print_help()
-        exit(1)
+    check_args()
     print "Run hmmsearch, parse its output, cluster the results and align clusters (entire pipeline)\n"
     logfile.write("Run hmmsearch, parse its output, cluster the results and align clusters (entire pipeline)\n\n")
-    options.hmmsearch = True
     options.blastclust = True
     options.extracthits = True
     options.alignment = True
-    if not path.isdir(path.abspath(options.resdir)):
-        makedirs(options.resdir)
-        print options.resdir,"created..."
-        logfile.write(options.resdir+" created...\n")
-    else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
-        logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
+    options.hmmsearch = True
+    create_resdir(options)
+    print NFILES,"nfiles2"
+
+if options.hmmsearch:
+    options.hmmsearch = True
     if not path.isdir(path.abspath(options.hmmsearch_outdir)):
         makedirs(options.hmmsearch_outdir)
         print options.hmmsearch_outdir,"created..."
@@ -376,6 +294,7 @@ elif (not(options.hmmsearch) and not(options.blastclust) and not(options.extract
     else:
         print options.hmmsearch_outdir,"already exists, possibly overwriting contents, continuing..."
         logfile.write(options.hmmsearch_outdir+" already exists, possibly overwriting contents, continuing...\n")
+
 
 
 ##---------------------------------------------------------------------------##
@@ -426,7 +345,7 @@ classificationfunction = lambda L: options.classifyK*L + options.classifyM
 ##                   PRINT SETTINGS TO LOGFILE AND STDOUT                    ##
 ##---------------------------------------------------------------------------##
 settings_string = ''.join(["\nThe pipeline was started with the following settings:\n",
-                           "numcpu           : ", str(options.numcpu),"\n",                    
+                           "numcpu           : ", str(options.numcpu),"\n",
                            "hmmsearch        : ", str(options.hmmsearch),"\n"
                            "extracthits      : ", str(options.extracthits),"\n",
                            "blastclust       : ", str(options.blastclust),"\n",
@@ -456,7 +375,7 @@ if len(args) > 1:
 else:
     printstring = "\nThe following database file was entered at command line:\n"+'\n'.join(args)
 
-print printstring 
+print printstring
 logfile.write(printstring+"\n")
 logfile.flush()
 
@@ -489,7 +408,7 @@ if options.hmmsearch:
     ## Run hmmsearch on the entered files, assuming they are databases in fasta  ##
     ## format.                                                                   ##
     ##---------------------------------------------------------------------------##
-    
+
     # Path to MODEL:
     model = options.model
 
@@ -518,7 +437,7 @@ if options.hmmsearch:
     # Retrieve input database paths
     # Note the change in usage of variable 'args'! It will soon contain hmmsearch outputfile paths
     databases = args
-    args = [] 
+    args = []
 
     # Retrieve current date, used in output filename to unique:ify the output filenames
     d = date.today()
@@ -546,10 +465,10 @@ if options.hmmsearch:
         outfilename = path.basename(database)
         database = path.abspath(database)
 
-        # Put together the entire string to call hmmsearch 
+        # Put together the entire string to call hmmsearch
         call_list = ''.join(["hmmsearch ", cpuflag, " ", textwflag, " ", heurflag, " ",
-                             "-o ", hmmsearch_outdir, outfilename, 
-                             ''.join([".hmmsearched--", d.isoformat(), " "]), 
+                             "-o ", hmmsearch_outdir, outfilename,
+                             ''.join([".hmmsearched--", d.isoformat(), " "]),
                              model, " ", database])
         hmmsearch = shlex.split(call_list)
         # Run hmmsearch
@@ -607,14 +526,14 @@ if options.extracthits:
     ## score above MIN_SCORE that classify as interesting according to the       ##
     ## classification function                                                   ##
     ##---------------------------------------------------------------------------##
-    
+
     t = time.asctime(time.localtime())
     print "Starting to extract and classify hits from hmmsearch output at: "+t
     logfile.write("Starting to extract and classify hits from hmmsearch output at: "+t+"\n")
 
     # Check that all paths given are valid and that files exists in those locations
     hmmsearch_result_files = []
-    for filepath in args: 
+    for filepath in args:
         # Note that 'args' might have changed contents from the input arguments,
         # depending of if the entire two first parts of the pipeline were run together.
         if path.isfile(path.abspath(filepath)):
@@ -629,7 +548,7 @@ if options.extracthits:
     except OSError:
         print " ERROR: Could not open file for writing:", RETR_SEQ_FILEPATH
         logfile.write(" ERROR: Could not open file for writing: "+RETR_SEQ_FILEPATH+"\n")
-                
+
 
     numerrors = 0
     scores_ids = []
@@ -657,14 +576,14 @@ if options.extracthits:
                 numerrors = numerrors +1 #score_id_tuples = []
                 dbpath = ""
                 continue # skip to next file to parse
-             
+
             if options.retrdb:
                 # Retrieve hits directly from their source database, if
                 # they classify correctly according to the classification
-                # function. The database needs an index file for this, 
+                # function. The database needs an index file for this,
                 # created using cdbfasta (standard settings), if not available
                 # things will go bad.
-                try: 
+                try:
                     sequences, errmessages = fluff.retrieve_sequences_from_db(dbpath, ids, dscores, RETR_SEQ_FILEPATH,
                                                      func=classificationfunction,
                                                      longseqcutoff=options.classifyC,
@@ -680,8 +599,8 @@ if options.extracthits:
                         print "Retrieved "+str(len(sequences))+" full length sequences from database"
                         logfile.write("Retrieved "+str(len(sequences))+" full length sequences from database\n")
                     else:
-                        # Write the identified sequences (full length from databse) 
-                        # to disk,they have been classified inside the previous 
+                        # Write the identified sequences (full length from databse)
+                        # to disk,they have been classified inside the previous
                         # function and non-qnr like hit sequences were not extracted.
                         for sequence in sequences:
                             retrseqfile.write(''.join([sequence,"\n"]))
@@ -744,7 +663,7 @@ if options.extracthits:
                                                                         func=classificationfunction,
                                                                         longseqcutoff=options.classifyC,
                                                                         longseqdef=options.classifyD)
-                    
+
                     # Write the identified sequences (fragments/domains) to disk,
                     # they have been classified inside the previous function and
                     # non-qnr like sequences have been removed.
@@ -768,7 +687,7 @@ if options.extracthits:
 
         scores_ids.append(score_id_tuples)
         logfile.flush()
-    
+
     if numerrors >= NFILES:
         print "CATASTROPHIC: No input files contains any potential hits!?"
         logfile.write("CATASTROPHIC: No input files contains any potential hits!?\n")
@@ -798,12 +717,12 @@ else:
 
 
 ## ---------------------------------------------------------------------------- ##
-#                       |          |         ____________                        #     
-#                       |          |        #            #                       #     
-#                       |          |        #            #                       #     
-#                       |          |         |          |                        #    
-#                       |          |         |          |                        #             
-#                       |          |         |          |                        #           
+#                       |          |         ____________                        #
+#                       |          |        #            #                       #
+#                       |          |        #            #                       #
+#                       |          |         |          |                        #
+#                       |          |         |          |                        #
+#                       |          |         |          |                        #
 #                       |          |         |          |                        #
 ## ---------------------------------------------------------------------------- ##
 
@@ -819,19 +738,19 @@ if options.blastclust:
             system(append_refseq)
             print "Added reference sequences from "+options.addrefseq+" to set to cluster"
             logfile.write("Added reference sequences from "+options.addrefseq+" to set to cluster\n")
-    
+
     # Shorten the sequences that are too long, since blastclust seems to have
     # trouble aligning very long sequences (e.g. complete sequence genomes).
     try:
         fluff.limit_sequence_length(RETR_SEQ_FILEPATH,64) # limit to 64 columns of sequence
     except fluff.PathError, e:
         print e.message
-        print "\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory" 
+        print "\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory"
         logfile.write(e.message+"\n")
         logfile.write("\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory\n")
         exit(1)
 
-    
+
     # Uniqueify the sequence IDs; needed for blastclust to cluster them since only
     # the first part of the identifier is parsed and thus sequence IDs risk becoming non-
     # unique. It is also a safeguard against redundant data sets.
@@ -848,13 +767,13 @@ if options.blastclust:
         exit(1)
 
 
-    # Run formatdb on the file outputted from uniqueify_seqids and 
+    # Run formatdb on the file outputted from uniqueify_seqids and
     # then run blastclust to cluster results (all in one function)
     t = time.asctime(time.localtime())
     print "Creating temporary database and running blastclust at: ",t
     logfile.write("Creating temporary database and running blastclust at: "+t+"\n")
     logfile.flush()
-    
+
     numcores = options.numcpu                   # Number of CPUs to use, 0 means all
     PercentIdentity = options.percent_identity  # Percent identity threshold, range 3-100
     CovThreshold = options.cov_threshold        # Coverage threshold for blastclust, range 0.1-0.99
@@ -865,9 +784,9 @@ if options.blastclust:
         #logfile.write("Running blastclust with the following settings:\n" \
         #              " Percent identity: "+str(PercentIdentity)+"\n Coverage Threshold: "+ \
         #              str(CovThreshold)+"\n Number of CPUs: "+str(numcores)+"\n")
-        
+
         blastclust_return_text, blastclust_output = fluff.run_blastclust(UnSeqFilename,PercentIdentity,CovThreshold,numcores)
-        
+
         if "error" in blastclust_return_text:
             print blastclust_output
             logfile.write(blastclust_output+"\n")
@@ -882,7 +801,7 @@ if options.blastclust:
             print blastclust_return_text
             print blastclust_output[0],
             logfile.write(blastclust_return_text+"\n"+blastclust_output[0])
-    
+
     except fluff.PathError, e:
         print e.message, "\n", UnSeqFilename
         logfile.write(e.message+"\n"+UnSeqFilename+"\n")
@@ -904,12 +823,12 @@ if options.blastclust:
         logfile.write("ERROR: Found nothing in blastclust output: "+blastclustoutputfile+"\n")
         fluff.cleanup(TMPDIR)
         exit(1)
-    
+
     # Deunique:ify sequence IDs parsed from blastclust output,
     # needed only for writing out cluster scores later on
     clusters = fluff.deuniqueify_seqids(parsedblastclust)
-        
-    
+
+
     # Unpickle the scores_ids (needed for being able to run clustering separately)
     # Really unnecessary to do all the time but does not really matter
     try:
@@ -923,7 +842,7 @@ if options.blastclust:
         print "Could not unpickle pickled.hsseq!"
         logfile.write("Could not unpickle pickled.hsseq!\n")
         fluff.cleanup(TMPDIR)
-    
+
     # Output the identified cluster to files,
     # one with clean clusters and one with scores
     clusterfilename = RESDIR+"/identified_clusters"
@@ -932,7 +851,7 @@ if options.blastclust:
     logfile.write("The identified clusters are written to: "+clusterfilename+"\n")
     clusterout = open(clusterfilename,"w")
     withscores = open(withscoresfilename,"w")
-    for cluster in clusters: 
+    for cluster in clusters:
         for seqID in cluster:
             clusterout.write(''.join([seqID," "]))
             for database in scores_ids:
@@ -945,7 +864,7 @@ if options.blastclust:
         withscores.write("\n")
     clusterout.close()
     withscores.close()
-    
+
     t = time.asctime(time.localtime())
     print "Finished clustering sequences at: "+t
     logfile.write("Finished clustering sequences at: "+t+"\n")
@@ -983,14 +902,14 @@ if options.alignment:
     ##---------------------------------------------------------------------------##
     ## PERFORM MULTIPLE ALIGNMENT WITHIN CLUSTERS                                ##
     ##---------------------------------------------------------------------------##
-    # This function writes to disk on its own initative so no further action 
+    # This function writes to disk on its own initative so no further action
     # is required here. The function runs MAFFT on all clusters with more
     # than one member and outputs all alignments to file.
-    # Additionally it produces alignments against the reference qnr-genes 
+    # Additionally it produces alignments against the reference qnr-genes
     # with all clusters. Files are outputted into the RESDIR directory that
-    # is assumed to exist. Note that the function contains no safeguard against 
+    # is assumed to exist. Note that the function contains no safeguard against
     # a nonexisting directory, but will probably crash with an error message.
-    
+
     # Unpickle parsedblastclust (needed for being able to run alignment separately)
     # Really unnecessary to do every time but does not really matter
     try:
@@ -1003,7 +922,7 @@ if options.alignment:
         print "Could not unpickle pickled.clusters!"
         logfile.write("Could not unpickle pickled.clusters!\n")
         fluff.cleanup(TMPDIR)
-    
+
     try:
         # If QNR_REFERENCE_SEQUENCES_PATH is invalid, do not align against
         # reference sequences and notify user path was invalid.
@@ -1018,7 +937,7 @@ if options.alignment:
 
             # Check that the reference sequence path is valid
             if path.isfile(QNR_REFERENCE_SEQUENCES_PATH):
-                retcode = fluff.malign_clusters(parsedblastclust, RESDIR, 
+                retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
                                                 QNR_REFERENCE_SEQUENCES_PATH,
                                                 TMPDIR)
             else:
@@ -1027,7 +946,7 @@ if options.alignment:
                 logfile.write("Filename supplied with -R flag was invalid, NOT aligning"
                        " against any reference sequences.\n")
                 retcode = fluff.malign_clusters(parsedblastclust, RESDIR, "", TMPDIR)
-            if retcode == 1: 
+            if retcode == 1:
                 print "No clusters contained more than one member, nothing to align!"
                 logfile.write("No clusters contained more than one member, nothing to align!\n")
             elif retcode == 2:
@@ -1048,8 +967,8 @@ if options.alignment:
             print t+"\nPerforming multiple alignment within identified clusters"
             logfile.write(t+"\nPerforming multiple alignment within identified clusters\n")
             logfile.flush()
-            
-            # Align the clusters 
+
+            # Align the clusters
             retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
                                             refseqpath="",
                                             workdir=TMPDIR)
@@ -1068,7 +987,7 @@ if options.alignment:
                 logfile.write("Multiple alignments complete\n" \
                        "MAFFT alignments are in files " \
                        "'*.aligned' in "+RESDIR+"\n")
-                                             
+
     except fluff.PathError, e:
         print e.message
         logfile.write(e.message+"\n")
