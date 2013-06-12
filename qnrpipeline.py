@@ -190,58 +190,49 @@ def check_args():
         parser.print_help()
         exit(1)
 
+print action + "\n"
+logfile.write(action + "\n")
+
 ## INITIALIZATION, PATH CREATION ETC - - - - - - - - - - - - - - - - - - - - - -
 # This is a very big messy pile of if, elif, else statements... As long as it
 # works as intended, I don't feel like refactoring it :).
 # Only run HMMsearch. -H
 if options.hmmsearch and not(options.extracthits or options.blastclust or options.alignment):
-    check_args()
-    print "Only perform hmmsearch\n"
-    logfile.write("Only perform hmmsearch\n")
+    action = "Only perform hmmsearch"
     options.extracthits = False
     options.blastclust = False
     options.alignment = False
 
 # BOTH run HMMsearch and extract hits, don't cluster or align. -HE
 elif (options.hmmsearch and options.extracthits) and not(options.blastclust or options.alignment):
-    check_args()
-    print "Perform hmmsearch and extract hits\n"
-    logfile.write("Perform hmmsearch and extract hits\n")
+    action = "Perform hmmsearch and extract hits"
     options.extracthits = True
     options.blastclust = False
     options.alignment = False
 
 # Extract hits from hmmsearch AND run clustering, do not align clusters. -EL
 elif (options.extracthits and options.blastclust) and not(options.hmmsearch or options.alignment):
-    check_args()
-    print "Extract hits from hmmsearch output AND cluster the sequences AND align clusters\n"
-    logfile.write("Extract hits from hmmsearch output AND cluster the sequences AND align clusters\n")
+    action = "Extract hits from hmmsearch output AND cluster the sequences AND align clusters"
     options.hmmsearch = False
     options.alignment = False
     create_resdir(options)
 
 # HMMsearch, extract hits and cluster, don't align. -HEL
 elif (options.hmmsearch and options.extracthits and options.blastclust) and not(options.alignment):
-    check_args()
-    print "Perform hmmsearch, extract hits and cluster\n"
-    logfile.write("Perform hmmsearch, extract hits and cluster\n")
+    action = "Perform hmmsearch, extract hits and cluster"
     options.extracthits = True
     options.blastclust = True
     options.alignment = False
 
 # Extract hits from hmmsearch AND run clustering AND align clusters. -ELA
 elif (options.extracthits and options.blastclust and options.alignment) and not(options.hmmsearch):
-    check_args()
-    print "Extract hits from hmmsearch output AND cluster the sequences\n"
-    logfile.write("Extract hits from hmmsearch output AND cluster the sequences\n")
+    action = "Extract hits from hmmsearch output AND cluster the sequences"
     options.hmmsearch = False
     create_resdir(options)
 
 # Only extract hits from hmmsearch output. -E
 elif options.extracthits and not(options.hmmsearch or options.blastclust or options.alignment):
-    check_args()
-    print "Only extract hits from hmmsearch output\n"
-    logfile.write("Only extract hits from hmmsearch output\n")
+    action = "Only extract hits from hmmsearch output"
     options.hmmsearch = False
     options.blastclust = False
     options.alignment = False
@@ -249,8 +240,7 @@ elif options.extracthits and not(options.hmmsearch or options.blastclust or opti
 
 # Only run clustering on pre-existing files. -L
 elif options.blastclust and not(options.hmmsearch or options.extracthits or options.alignment):
-    print "Only performing clustering\n"
-    logfile.write("Only performing clustering\n")
+    action = "Only performing clustering"
     options.hmmsearch = False
     options.extracthits = False
     options.alignment = False
@@ -258,16 +248,14 @@ elif options.blastclust and not(options.hmmsearch or options.extracthits or opti
 
 # Only run clustering on pre-existing files AND align clusters. -LA
 elif (options.blastclust and options.alignment) and not(options.hmmsearch or options.extracthits):
-    print "Only performing clustering and cluster alignment\n"
-    logfile.write("Only performing clustering and cluster alignment\n")
+    action = "Only performing clustering and cluster alignment"
     options.hmmsearch = False
     options.extracthits = False
     create_resdir(options)
 
 # Only run alignment of pre-existing clusters. -A
 elif options.alignment and not(options.hmmsearch or options.extracthits or options.blastclust):
-    print "Only performing cluster alignment\n"
-    logfile.write("Only performing cluster alignment\n")
+    action = "Only performing cluster alignment"
     options.hmmsearch = False
     options.extracthits = False
     options.blastclust = False
@@ -275,15 +263,12 @@ elif options.alignment and not(options.hmmsearch or options.extracthits or optio
 
 # If no "only" options were set, run entire pipeline! -HELA
 elif (not(options.hmmsearch) and not(options.blastclust) and not(options.extracthits) and not(options.alignment)) or (options.hmmsearch and options.blastclust and options.extracthits and options.alignment):
-    check_args()
-    print "Run hmmsearch, parse its output, cluster the results and align clusters (entire pipeline)\n"
-    logfile.write("Run hmmsearch, parse its output, cluster the results and align clusters (entire pipeline)\n\n")
+    action = "Run hmmsearch, parse its output, cluster the results and align clusters (entire pipeline)"
     options.blastclust = True
     options.extracthits = True
     options.alignment = True
     options.hmmsearch = True
     create_resdir(options)
-    print NFILES,"nfiles2"
 
 if options.hmmsearch:
     options.hmmsearch = True
@@ -295,7 +280,8 @@ if options.hmmsearch:
         print options.hmmsearch_outdir,"already exists, possibly overwriting contents, continuing..."
         logfile.write(options.hmmsearch_outdir+" already exists, possibly overwriting contents, continuing...\n")
 
-
+if options.hmmsearch or options.extracthits:
+    check_args()
 
 ##---------------------------------------------------------------------------##
 ## - - - - - - - - - - - - CONSTANTS ETC - - - - - - - - - - - - - - - - - - ##
