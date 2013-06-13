@@ -31,7 +31,8 @@ import shlex, subprocess
 from optparse import OptionParser, OptionGroup
 
 import fluff
-import hmmsearch
+from hmmsearch import HMMSearch
+from parser import Parser
 
 ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
@@ -212,19 +213,12 @@ print action + "\n"
 logfile.write(action + "\n")
 
 if options.hmmsearch or options.extracthits:
-    if options.extracthits and not options.hmmsearch:
-        message = "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
-    else:
+    if options.hmmsearch:
         message = "ERROR! Needs filename(s) for database(s) to search"
-    # Check for filename arguments
-    if args == ['-']:
-        print message
-        logfile.write(message + "\n")
-        parser.print_help()
-        exit(1)
-    elif len(args) != 0:
-        NFILES = len(args)
     else:
+        message = "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
+    # Check for filename arguments
+    if args == ['-'] or len(args) == 0:
         print message
         logfile.write(message + "\n")
         parser.print_help()
@@ -279,19 +273,11 @@ if options.addrefseq:
 RETR_SEQ_FILEPATH = path.abspath(''.join([TMPDIR,"retrieved_sequences.fasta"]))
 RESDIR = path.relpath(options.resdir)
 
-# A minimum score of 0 means that we will consider and classify all hits
-# in the hmmsearch output files
-MIN_SCORE = options.minscore
-
-
-
 
 ##---------------------------------------------------------------------------##
 ##                  GENE FRAGMENT CLASSIFICATION FUNCTION                    ##
 ##---------------------------------------------------------------------------##
 classificationfunction = lambda L: options.classifyK*L + options.classifyM
-
-
 
 
 ##---------------------------------------------------------------------------##
@@ -357,14 +343,15 @@ logfile.write(logfileseparator+"\n")
     ##---------------------------------------------------------------------------##
 
 if options.hmmsearch:
-    hmms = hmmsearch.HMMSearch(logfile)
-    args = hmms.search(path.abspath(options.model), # Retrieve the path to the model from user set variables above
-                                                #Using the absolute path (better?)
-                     options.hmmsearch_outdir,
-                     options.numcpu,
-                    True,
-                    options.noheuristics,
-                    args) # Note the change in usage of variable 'args'! It will soon contain hmmsearch outputfile paths
+    hmms = HMMSearch(logfile)
+    args = hmms.search(
+                path.abspath(options.model), # Retrieve the path to the model from user set variables above
+                options.hmmsearch_outdir,
+                options.numcpu,
+                True,
+                options.noheuristics,
+                args)
+    # Note the change in usage of variable 'args'! It now contains the hmmsearch outputfile paths
 else:
     print "Not running hmmsearch"
     logfile.write("Not running hmmsearch\n")
@@ -391,188 +378,10 @@ if options.extracthits:
     ## classification function                                                   ##
     ##---------------------------------------------------------------------------##
 
-    t = time.asctime(time.localtime())
-    print "Starting to extract and classify hits from hmmsearch output at: "+t
-    logfile.write("Starting to extract and classify hits from hmmsearch output at: "+t+"\n")
-
-    # Check that all paths given are valid and that files exists in those locations
-    hmmsearch_result_files = []
-    for filepath in args:
-        # Note that 'args' might have changed contents from the input arguments,
-        # depending of if the entire two first parts of the pipeline were run together.
-        if path.isfile(path.abspath(filepath)):
-            hmmsearch_result_files.append(path.abspath(filepath))
-        else:
-            print " ERROR: incorrect path for hmmsearch output file:",filepath
-            logfile.write(" ERROR: incorrect path for hmmsearch output file: "+filepath+"\n")
-
-    # Open file for writing the retrieved sequences to semi-temporary file
-    try:
-        retrseqfile = open(RETR_SEQ_FILEPATH,'w')
-    except OSError:
-        print " ERROR: Could not open file for writing:", RETR_SEQ_FILEPATH
-        logfile.write(" ERROR: Could not open file for writing: "+RETR_SEQ_FILEPATH+"\n")
-
-
-    numerrors = 0
-    scores_ids = []
-    for hmmsearch_result_file in hmmsearch_result_files:
-        # Open file for reading
-        try:
-            try:
-                # Parse the hmmsearch output file -- Extract hits above MIN_SCORE (0)
-                print "Parsing",hmmsearch_result_file
-                logfile.write("Parsing "+hmmsearch_result_file+"\n")
-                parsed = fluff.parse_hmmsearch_output(hmmsearch_result_file,MIN_SCORE)
-                score_id_tuples, dbpath = parsed # Unpack parsed information
-                scores,dscores,ids = zip(*score_id_tuples) # Unzip the scores/IDs
-            except ValueError:
-                print "Found no sequences with domain score above or equal", MIN_SCORE,
-                print " in file:",hmmsearch_result_file
-                logfile.write("Found no sequences with domain score above or equal "+str(MIN_SCORE))
-                logfile.write(" in file: "+hmmsearch_result_file+"\n")
-                numerrors = numerrors + 1 #score_id_tuples = []
-                dbpath = ""
-                continue # skip to next file to parse
-            except fluff.ParseError as e:
-                print e.message
-                logfile.write(e.message+"\n")
-                numerrors = numerrors +1 #score_id_tuples = []
-                dbpath = ""
-                continue # skip to next file to parse
-
-            if options.retrdb:
-                # Retrieve hits directly from their source database, if
-                # they classify correctly according to the classification
-                # function. The database needs an index file for this,
-                # created using cdbfasta (standard settings), if not available
-                # things will go bad.
-                try:
-                    sequences, errmessages = fluff.retrieve_sequences_from_db(dbpath, ids, dscores, RETR_SEQ_FILEPATH,
-                                                     func=classificationfunction,
-                                                     longseqcutoff=options.classifyC,
-                                                     longseqdef=options.classifyD)
-                    # If there were any error messages, print them and continue.
-                    if errmessages:
-                        for message in errmessages:
-                            print message,
-                            logfile.write(message)
-                        # If there were any sequences returned, write them.
-                        for sequence in sequences:
-                            retrseqfile.write(''.join([sequence,"\n"]))
-                        print "Retrieved "+str(len(sequences))+" full length sequences from database"
-                        logfile.write("Retrieved "+str(len(sequences))+" full length sequences from database\n")
-                    else:
-                        # Write the identified sequences (full length from databse)
-                        # to disk,they have been classified inside the previous
-                        # function and non-qnr like hit sequences were not extracted.
-                        for sequence in sequences:
-                            retrseqfile.write(''.join([sequence,"\n"]))
-                        print "Retrieved "+str(len(sequences))+" full length sequences from database that contains fragments classified as potential hits"
-                        logfile.write("Retrieved "+str(len(sequences))+" full length sequences from databases that contains fragments classified as potential hits\n")
-                except ValueError:
-                    print "No sequences found in the hmmsearch output file", hmmsearch_result_file
-                    logfile.write("No sequences found in the hmmsearch output file "+hmmsearch_result_file+"\n")
-
-            elif int(options.extendleft) or int(options.extendright):
-                #print "EXTENDING HITS" # DEBUG
-                # Extend the hits to the HMMER model and retrieve "a little more"
-                # around the edges of the hits, adds the sequence origin to the
-                # fasta headers. Only retrieves sequences that classify correctly
-                # according to the classification function.
-                try:
-                    sequences, errmessages = fluff.extend_sequences_from_hmmsearch(hmmsearch_result_file,
-                                                                      ids, MIN_SCORE, dbpath,
-                                                                      extendleft=options.extendleft,
-                                                                      extendright=options.extendright,
-                                                                      func=classificationfunction,
-                                                                      longseqcutoff=options.classifyC,
-                                                                      longseqdef=options.classifyD)
-                    # If there were any error messages, print them and continue.
-                    if errmessages:
-                        for message in errmessages:
-                            print message,
-                            logfile.write(message)
-                        # Write the original aligned domain sequences that were
-                        # retrieved instead of the extended sequences. They have
-                        # been classified inside the previous function anyway.
-                        for sequence in sequences:
-                            retrseqfile.write(''.join([sequence,"\n"]))
-                        print "Retrieved "+str(len(sequences))+" sequences from hmmsearch output that classified as potential hits"
-                        logfile.write("Retrieved "+str(len(sequences))+" sequences from hmmsearch output that classified as potential hits\n")
-                    else:
-                        # Write the identified sequences (extended domain hits) to disk,
-                        # they have been classified inside the previous function and
-                        # non-qnr like sequences have been removed.
-                        for sequence in sequences:
-                            retrseqfile.write(sequence)
-                        print "Retrieved "+str(len(sequences))+" extended sequences from database that classified as potential hits"
-                        logfile.write("Retrieved "+str(len(sequences))+" extended sequences from database that classified as potential hits\n")
-                except ValueError:
-                    print "No sequences found in the hmmsearch output file", hmmsearch_result_file
-                    logfile.write("No sequences found in the hmmsearch output file "+hmmsearch_result_file+"\n")
-                except fluff.PathError, e:
-                    print e.message
-                    logfile.write(e.message+"\n")
-
-            else:
-                # Retrieve interesting sequences from hmmsearch output
-                # and write out to RETR_SEQ_FILEPATH
-                # This is where the sequences get their origin attached
-                # Classify the hmmsearch hits according to classification function
-                # and only write sequences to disk if they are classified as 'true'
-                try:
-                    sequences = fluff.retrieve_sequences_from_hmmsearch(hmmsearch_result_file,
-                                                                        ids, MIN_SCORE, dbpath,
-                                                                        func=classificationfunction,
-                                                                        longseqcutoff=options.classifyC,
-                                                                        longseqdef=options.classifyD)
-
-                    # Write the identified sequences (fragments/domains) to disk,
-                    # they have been classified inside the previous function and
-                    # non-qnr like sequences have been removed.
-                    for sequence in sequences:
-                        retrseqfile.write(''.join([sequence,"\n"]))
-                    print "Retrieved "+str(len(sequences))+" sequences from hmmsearch output that classified as potential hits"
-                    logfile.write("Retrieved "+str(len(sequences))+" sequences from hmmsearch output that classified as potential hits\n")
-                except ValueError:
-                    print "No sequences found in the hmmsearch output file", hmmsearch_result_file
-                    logfile.write("No sequences found in the hmmsearch output file "+hmmsearch_result_file+"\n")
-                except fluff.PathError, e:
-                    print e.message
-                    logfile.write(e.message+"\n")
-
-        except IOError:
-            print "Could not open file for reading:", hmmsearch_result_file
-            print "Continuing with next file..."
-            logfile.write("Could not open file for reading: "+hmmsearch_result_file+"\n")
-            logfile.write("Continuing with next file...\n")
-
-
-        scores_ids.append(score_id_tuples)
-        logfile.flush()
-
-    if numerrors >= NFILES:
-        print "CATASTROPHIC: No input files contains any potential hits!?"
-        logfile.write("CATASTROPHIC: No input files contains any potential hits!?\n")
-        exit(1)
-
-    # Pickle the scores_ids for disconnected usage in other scripts
-    # note that scores_ids is a very messy structure!
-    data = scores_ids
-    pickle_filename = ''.join([TMPDIR,"pickled.hsseq"])
-    outpickle = open(pickle_filename,'wb')
-    pickle.dump(data,outpickle)
-    outpickle.close()
-    retrseqfile.close()
-
-
-    t = time.asctime(time.localtime())
-    print "Finished parsing hmmsearch output files and classifying hits at: "+t
-    logfile.write("Finished parsing hmmsearch output files and classifying hits at: "+t+"\n")
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
-    logfile.flush()
+    # Note that 'args' might have changed contents from the input arguments,
+    # depending of if the entire two first parts of the pipeline were run together.
+    parser = Parser(logfile, classificationfunction)
+    parser.parse_files(args, RETR_SEQ_FILEPATH, options.minscore, options.retrdb, options.classifyC, options.classifyD, options.extendleft, options.extendright)
 else:
     print "Not extracting hmmsearch hits"
     logfile.write("Not extracting hmmsearch hits\n")
