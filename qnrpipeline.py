@@ -34,6 +34,7 @@ import fluff
 from hmmsearch import HMMSearch
 from parser import Parser
 from logger import Logger
+from blastclust import BLASTClusterer
 
 ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
@@ -379,6 +380,9 @@ else:
 
 
 if options.blastclust:
+
+    aligner = BLASTClusterer(logfile)
+
     ##---------------------------------------------------------------------------##
     ##     Convert sequences to a BLAST database and cluster using blastclust    ##
     ##---------------------------------------------------------------------------##
@@ -389,96 +393,8 @@ if options.blastclust:
             system(append_refseq)
             logfile.write("Added reference sequences from "+options.addrefseq+" to set to cluster\n")
 
-    # Shorten the sequences that are too long, since blastclust seems to have
-    # trouble aligning very long sequences (e.g. complete sequence genomes).
-    try:
-        fluff.limit_sequence_length(RETR_SEQ_FILEPATH,64) # limit to 64 columns of sequence
-    except fluff.PathError, e:
-        logfile.write(e.message+"\n")
-        logfile.write("\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory\n")
-        exit(1)
+    clusters, parsedblastclust, scores_ids = aligner.run(RETR_SEQ_FILEPATH, options.numcpu, options.percent_identity, options.cov_threshold)
 
-
-    # Uniqueify the sequence IDs; needed for blastclust to cluster them since only
-    # the first part of the identifier is parsed and thus sequence IDs risk becoming non-
-    # unique. It is also a safeguard against redundant data sets.
-    # (TODO: might be possible to use python "set" to remove duplicates, but
-    # that would require checking of entire sequences to ensure robustness)
-    SeqFilename = TMPDIR+"retrieved_sequences.fasta.shortened"
-    UnSeqFilename = TMPDIR+"unique_retrieved_sequences.fasta.shortened"
-    try:
-        unique_sequences = fluff.uniqueify_seqids(SeqFilename,UnSeqFilename)
-    except ValueError:
-        logfile.write("Could not uniqueify the sequence IDs!\n")
-        fluff.cleanup(TMPDIR)
-        exit(1)
-
-
-    # Run formatdb on the file outputted from uniqueify_seqids and
-    # then run blastclust to cluster results (all in one function)
-    t = time.asctime(time.localtime())
-    logfile.write("Creating temporary database and running blastclust at: "+t+"\n")
-    logfile.flush()
-
-    numcores = options.numcpu                   # Number of CPUs to use, 0 means all
-    PercentIdentity = options.percent_identity  # Percent identity threshold, range 3-100
-    CovThreshold = options.cov_threshold        # Coverage threshold for blastclust, range 0.1-0.99
-    try:
-        #print "Running blastclust with the following settings:"
-        #print " Percent identity:",PercentIdentity,"\n Coverage Threshold:",CovThreshold
-        #print " Number of CPUs:",numcores
-        #logfile.write("Running blastclust with the following settings:\n" \
-        #              " Percent identity: "+str(PercentIdentity)+"\n Coverage Threshold: "+ \
-        #              str(CovThreshold)+"\n Number of CPUs: "+str(numcores)+"\n")
-
-        blastclust_return_text, blastclust_output = fluff.run_blastclust(UnSeqFilename,PercentIdentity,CovThreshold,numcores)
-
-        if "error" in blastclust_return_text:
-            logfile.write(blastclust_output+"\n")
-            fluff.cleanup(TMPDIR)
-            exit(1)
-        elif "ERROR" in blastclust_output[1]:
-            logfile.write(blastclust_output[1]+"\n")
-            fluff.cleanup(TMPDIR)
-            exit(1)
-        else:
-            logfile.write(blastclust_return_text+"\n"+blastclust_output[0])
-
-    except fluff.PathError, e:
-        logfile.write(e.message+"\n"+UnSeqFilename+"\n")
-        fluff.cleanup(TMPDIR)
-        exit(1)
-
-
-    # Parse output from blastclust (and de-uniqueify sequences IDs -- not needed anymore)
-    blastclustoutputfile = UnSeqFilename+".clusters"
-    try:
-        parsedblastclust = fluff.parse_blastclust(blastclustoutputfile)
-    except fluff.PathError, e:
-        logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
-        fluff.cleanup(TMPDIR)
-        exit(1)
-    except ValueError:
-        logfile.write("ERROR: Found nothing in blastclust output: "+blastclustoutputfile+"\n")
-        fluff.cleanup(TMPDIR)
-        exit(1)
-
-    # Deunique:ify sequence IDs parsed from blastclust output,
-    # needed only for writing out cluster scores later on
-    clusters = fluff.deuniqueify_seqids(parsedblastclust)
-
-
-    # Unpickle the scores_ids (needed for being able to run clustering separately)
-    # Really unnecessary to do all the time but does not really matter
-    try:
-        pkfile = open(''.join([TMPDIR,"pickled.hsseq"]),'rb')
-        scores_ids = pickle.load(pkfile)
-    except IOError:
-        logfile.write("Could not read the pickled high-scoring sequences (pickled.hsseq)\n")
-        fluff.cleanup(TMPDIR)
-    except pickle.UnpicklingError:
-        logfile.write("Could not unpickle pickled.hsseq!\n")
-        fluff.cleanup(TMPDIR)
 
     # Output the identified cluster to files,
     # one with clean clusters and one with scores
@@ -505,7 +421,6 @@ if options.blastclust:
     logfile.write("Finished clustering sequences at: "+t+"\n")
     logfile.line()
     logfile.flush()
-
 
     # pickle the clusters and scores_ids for others scripts to use as a convenience
     data = (parsedblastclust,scores_ids)

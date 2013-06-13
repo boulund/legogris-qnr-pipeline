@@ -33,11 +33,6 @@
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 
-
-
-
-
-
 ##-------------------------------------------------------------##
 ##     COUNT NUCLEOTIDES SEARCHED FROM HMMSEARCH OUTPUT        ##
 ##-------------------------------------------------------------##
@@ -604,7 +599,7 @@ def limit_sequence_length(sequencefile,MAX_LINES=64):
 
     Returns::
 
-        (none)      Writes directly to disk to 'sequencefile.shortened'.
+        filename (String)   Writes directly to disk to 'sequencefile.shortened'. filename is the filename of the output file.
 
     Errors::
 
@@ -616,10 +611,11 @@ def limit_sequence_length(sequencefile,MAX_LINES=64):
 
     if not path.isfile(path.abspath(sequencefile)):
         raise PathError(''.join(["ERROR: Path ",sequencefile," is not a valid file!"]))
+    outfilename = sequencefile+'.shortened'
 
     try:
         file = open(path.abspath(sequencefile),'r')
-        outfile = open(path.abspath(sequencefile+'.shortened'),'w')
+        outfile = open(path.abspath(outfilename),'w')
     except OSError:
         raise PathError("Could not open sequence and/or output file!")
 
@@ -680,7 +676,7 @@ def limit_sequence_length(sequencefile,MAX_LINES=64):
 
             outfile.write(''.join(seqout))
 
-    return
+    return outfilename
 ############## END limit_sequence_length
 
 
