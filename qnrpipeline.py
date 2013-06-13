@@ -506,7 +506,7 @@ if options.alignment:
             # Align the clusters
             retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
                                             refseqpath="",
-                                            workdir=TMPDIR)
+                                            seqfilepath=RETR_SEQ_FILEPATH+'.shortened.unique')
             if retcode == 1:
                 logfile.write("No clusters contained more than one member, nothing to align!\n")
             elif retcode == 2:

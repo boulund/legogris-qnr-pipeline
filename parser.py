@@ -78,7 +78,7 @@ class Parser:
                 # function. The database needs an index file for this,
                 # created using cdbfasta (standard settings), if not available
                 # things will go bad.
-                logfile.write("Retrieving full length sequences from database")
+                logfile.write("Retrieving full length sequences from database\n")
                 sequences, errmessages = _retrieve_sequences_from_db(dbpath, ids, dscores, outfile,
                                                 func=classificationfunction,
                                                 longseqcutoff=classifyC,
@@ -89,7 +89,7 @@ class Parser:
                 # around the edges of the hits, adds the sequence origin to the
                 # fasta headers. Only retrieves sequences that classify correctly
                 # according to the classification function.
-                logfile.write("Retrieving extended sequences from database that classified as potential hits")
+                logfile.write("Retrieving extended sequences from database that classified as potential hits\n")
                 sequences, errmessages = _extend_sequences_from_hmmsearch(hmmsearch_result_file,
                                                                 ids, minscore, dbpath,
                                                                 extendleft=extendleft,
@@ -103,7 +103,7 @@ class Parser:
                 # This is where the sequences get their origin attached
                 # Classify the hmmsearch hits according to classification function
                 # and only write sequences to disk if they are classified as 'true'
-                logfile.write("Retrieving sequences from hmmsearch output that classified as potential hits")
+                logfile.write("Retrieving sequences from hmmsearch output that classified as potential hits\n")
                 sequences = _retrieve_sequences_from_hmmsearch(hmmsearch_result_file,
                                                                     ids, minscore, dbpath,
                                                                     func=classificationfunction,

@@ -70,7 +70,7 @@ def count_nucleotides_from_hmmsearch(hmmsearchfiles):
 ##-----------------------------------------------##
 ## MULTIPLE ALIGNMENT WITHIN AND BETWEEN CLUSTERS##
 ##-----------------------------------------------##
-def malign_clusters(clusters,resdir,refseqpath,workdir):
+def malign_clusters(clusters,resdir,refseqpath,seqfilepath):
     '''
     Reads clusters and from file reads complete sequences
     for the sequence IDs specified in the clusters.
@@ -124,7 +124,7 @@ def malign_clusters(clusters,resdir,refseqpath,workdir):
     tempseqid = ""
     tempseq = ""
     try:
-        seqfile = open(''.join([workdir,"unique_retrieved_sequences.fasta.shortened"]),'r')
+        seqfile = open(seqfilepath,'r')
         for line in seqfile:
             if line.startswith(">"):
                 sequences.append(''.join([tempseqid,tempseq]))
@@ -134,13 +134,8 @@ def malign_clusters(clusters,resdir,refseqpath,workdir):
                 tempseq = ''.join([tempseq,line])
         sequences.append(''.join([tempseqid,tempseq]))
     except OSError:
-        raise PathError(''.join(["Could not open/find ",workdir,"'unique_retrieved_sequences.fasta'"]))
+        raise PathError(''.join(["Could not open/find ",seqfilepath]))
 
-
-    ## Not using clustalw any more, the log-file business has been commented out on purpose!
-    # Perform multiple alignment between members of clusters and write log
-    # of clustalw stuff to 'workdir'/clustalw.log
-    #clustalwlogfile = open(path.abspath(''.join([workdir,'clustalw.log'])),'w')
 
     clusterno = 0
     for cluster in clusters:

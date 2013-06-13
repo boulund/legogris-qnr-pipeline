@@ -1,6 +1,6 @@
 import time
 
-_logfileseparator = "----------------------------------------------------------------------"
+_logfileseparator = "----------------------------------------------------------------------\n"
 
 class Logger:
     def __init__(self, logfilepath, debug=False):

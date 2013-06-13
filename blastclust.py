@@ -32,7 +32,7 @@ class BLASTClusterer:
         # that would require checking of entire sequences to ensure robustness)
         # SeqFilename = TMPDIR+"retrieved_sequences.fasta.shortened"
         # UnSeqFilename = TMPDIR+"unique_retrieved_sequences.fasta.shortened"
-        UnSeqFilename = SeqFilename+'.shortened'
+        UnSeqFilename = SeqFilename+'.unique'
         try:
             unique_sequences = _uniqueify_seqids(SeqFilename,UnSeqFilename)
         except ValueError:
