@@ -5,7 +5,6 @@ import pickle
 
 from fluff import PathError, ParseError
 
-logfileseparator = "----------------------------------------------------------------------"
 TMPDIR = "./pipeline_data/"
 
 class Parser:
@@ -17,7 +16,6 @@ class Parser:
     def parse_files(self, files, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright):
         logfile = self.logfile
         t = time.asctime(time.localtime())
-        print "Starting to extract and classify hits from hmmsearch output at: "+t
         logfile.write("Starting to extract and classify hits from hmmsearch output at: "+t+"\n")
 
         # Check that all paths given are valid and that files exists in those locations
@@ -26,14 +24,12 @@ class Parser:
             if path.isfile(path.abspath(filepath)):
                 hmmsearch_result_files.append(path.abspath(filepath))
             else:
-                print " ERROR: incorrect path for hmmsearch output file:",filepath
                 logfile.write(" ERROR: incorrect path for hmmsearch output file: "+filepath+"\n")
 
         # Open file for writing the retrieved sequences to semi-temporary file
         try:
             retrseqfile = open(outfile,'w')
         except OSError:
-            print " ERROR: Could not open file for writing:", RETR_SEQ_FILEPATH
             logfile.write(" ERROR: Could not open file for writing: "+RETR_SEQ_FILEPATH+"\n")
 
 
@@ -48,7 +44,6 @@ class Parser:
             logfile.flush()
 
         if numerrors >= len(hmmsearch_result_files):
-            print "CATASTROPHIC: No input files contains any potential hits!?"
             logfile.write("CATASTROPHIC: No input files contains any potential hits!?\n")
             exit(1)
 
@@ -62,10 +57,8 @@ class Parser:
         retrseqfile.close()
 
         t = time.asctime(time.localtime())
-        print "Finished parsing hmmsearch output files and classifying hits at: "+t
         logfile.write("Finished parsing hmmsearch output files and classifying hits at: "+t+"\n")
-        print logfileseparator
-        logfile.write(logfileseparator+"\n")
+        logfile.line()
         logfile.flush()
 
     def parse_file(self, hmmsearch_result_file, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright):
@@ -74,7 +67,6 @@ class Parser:
         # Open file for reading
         try:
             # Parse the hmmsearch output file -- Extract hits above minscore (0)
-            print "Parsing",hmmsearch_result_file
             logfile.write("Parsing "+hmmsearch_result_file+"\n")
             parsed = _parse_hmmsearch_output(hmmsearch_result_file,minscore)
             score_id_tuples, dbpath = parsed # Unpack parsed information
@@ -86,7 +78,6 @@ class Parser:
                 # function. The database needs an index file for this,
                 # created using cdbfasta (standard settings), if not available
                 # things will go bad.
-                print "Retrieving full length sequences from database"
                 logfile.write("Retrieving full length sequences from database")
                 sequences, errmessages = _retrieve_sequences_from_db(dbpath, ids, dscores, outfile,
                                                 func=classificationfunction,
@@ -98,7 +89,6 @@ class Parser:
                 # around the edges of the hits, adds the sequence origin to the
                 # fasta headers. Only retrieves sequences that classify correctly
                 # according to the classification function.
-                print "Retrieving extended sequences from database that classified as potential hits"
                 logfile.write("Retrieving extended sequences from database that classified as potential hits")
                 sequences, errmessages = _extend_sequences_from_hmmsearch(hmmsearch_result_file,
                                                                 ids, minscore, dbpath,
@@ -113,7 +103,6 @@ class Parser:
                 # This is where the sequences get their origin attached
                 # Classify the hmmsearch hits according to classification function
                 # and only write sequences to disk if they are classified as 'true'
-                print "Retrieving sequences from hmmsearch output that classified as potential hits"
                 logfile.write("Retrieving sequences from hmmsearch output that classified as potential hits")
                 sequences = _retrieve_sequences_from_hmmsearch(hmmsearch_result_file,
                                                                     ids, minscore, dbpath,
@@ -123,9 +112,7 @@ class Parser:
 
             if errmessages:
                 for message in errmessages:
-                    print message,
                     logfile.write(message)
-            print "Retrieved "+str(len(sequences))+" full length sequences from database"
             logfile.write("Retrieved "+str(len(sequences))+" full length sequences from database\n")
             # Write the identified sequences (fragments/domains) to disk,
             # they have been classified inside the previous function and
@@ -133,20 +120,14 @@ class Parser:
             return (sequences, score_id_tuples)
 
         except IOError:
-            print "Could not open file for reading:", hmmsearch_result_file
-            print "Continuing with next file..."
             logfile.write("Could not open file for reading: "+hmmsearch_result_file+"\n")
             logfile.write("Continuing with next file...\n")
         except ValueError:
-            print "Found no sequences with domain score above or equal", minscore,
-            print " in file:",hmmsearch_result_file
             logfile.write("Found no sequences with domain score above or equal "+str(minscore))
             logfile.write(" in file: "+hmmsearch_result_file+"\n")
         except PathError, e:
-            print e.message
             logfile.write(e.message+"\n")
         except ParseError as e:
-            print e.message
             logfile.write(e.message+"\n")
         return ([], score_id_tuples)
 

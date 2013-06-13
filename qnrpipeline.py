@@ -33,6 +33,7 @@ from optparse import OptionParser, OptionGroup
 import fluff
 from hmmsearch import HMMSearch
 from parser import Parser
+from logger import Logger
 
 ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
@@ -145,18 +146,10 @@ if len(argv)<2:
 
 
 # Create a logfile to which all messages are written
-try:
-    t = time.asctime(time.localtime())
-    logfile = open('qnrsearch.log','a')
-    if logfile.tell() == 0:
-        print "Logfile 'qnrsearch.log' created on",t
-        logfile.write("Logfile 'qnrsearch.log' created on "+t+"\n")
-    else:
-        print "Logging to 'qnrsearch.log' started on",t
-        logfile.write("Logging started on "+t+"\n")
-except IOError:
-    print "NOTE: cannot create logfile:", arg
-    print "Messages will be printed to STDOUT exclusively"
+t = time.asctime(time.localtime())
+
+logfile = Logger('qnrsearch.log')
+logfile.open()
 
 print "\n     -----=====[ ",parser.version," ]=====-----\n\nAssigned work:"
 logfile.write("\n     -----=====[  "+parser.version+"  ]=====-----\n\nAssigned work:\n")
@@ -219,7 +212,6 @@ if options.hmmsearch or options.extracthits:
         message = "ERROR! Needs filename(s) for hmmsearch output file(s) to search"
     # Check for filename arguments
     if args == ['-'] or len(args) == 0:
-        print message
         logfile.write(message + "\n")
         parser.print_help()
         exit(1)
@@ -227,19 +219,15 @@ if options.hmmsearch or options.extracthits:
 if options.hmmsearch:
     if not path.isdir(path.abspath(options.hmmsearch_outdir)):
         makedirs(options.hmmsearch_outdir)
-        print options.hmmsearch_outdir,"created..."
         logfile.write(options.hmmsearch_outdir+" created...\n")
     else:
-        print options.hmmsearch_outdir,"already exists, possibly overwriting contents, continuing..."
         logfile.write(options.hmmsearch_outdir+" already exists, possibly overwriting contents, continuing...\n")
 
 if options.alignment or not options.hmmsearch:
     if not path.isdir(path.abspath(options.resdir)):
         makedirs(options.resdir)
-        print options.resdir,"created..."
         logfile.write(options.resdir+" created...\n")
     else:
-        print options.resdir,"already exists, possibly overwriting contents, continuing..."
         logfile.write(options.resdir+" already exists, possibly overwriting contents, continuing...\n")
 
 
@@ -256,10 +244,8 @@ if options.alignment or not options.hmmsearch:
 TMPDIR = "./pipeline_data/"
 if not path.isdir(path.abspath(TMPDIR)):
     makedirs(TMPDIR)
-    print TMPDIR,"created..."
     logfile.write(TMPDIR+" created...\n")
 else:
-    print TMPDIR,"already exists, possibly overwriting contents, continuing..."
     logfile.write(TMPDIR+" already exists, possibly overwriting contents, continuing...\n")
 
 # Make sure that the path to the reference sequences is a complete path
@@ -307,22 +293,18 @@ settings_string = ''.join(["\nThe pipeline was started with the following settin
                            "extendright      : ", str(options.extendright),"\n",
                            "minlength        : ", str(options.minlength),"\n"])
 logfile.write(settings_string)
-print settings_string, # string ends with newline so don't print one!
 
 if len(args) > 1:
     printstring = "\nThe following database files were entered at command line:\n"+'\n'.join(args)
 else:
     printstring = "\nThe following database file was entered at command line:\n"+'\n'.join(args)
 
-print printstring
 logfile.write(printstring+"\n")
 logfile.flush()
 
 
 
-logfileseparator = "----------------------------------------------------------------------"
-print logfileseparator
-logfile.write(logfileseparator+"\n")
+logfile.line()
 
 
 
@@ -353,10 +335,8 @@ if options.hmmsearch:
                 args)
     # Note the change in usage of variable 'args'! It now contains the hmmsearch outputfile paths
 else:
-    print "Not running hmmsearch"
     logfile.write("Not running hmmsearch\n")
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -383,10 +363,8 @@ if options.extracthits:
     parser = Parser(logfile, classificationfunction)
     parser.parse_files(args, RETR_SEQ_FILEPATH, options.minscore, options.retrdb, options.classifyC, options.classifyD, options.extendleft, options.extendright)
 else:
-    print "Not extracting hmmsearch hits"
     logfile.write("Not extracting hmmsearch hits\n")
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -409,7 +387,6 @@ if options.blastclust:
         if path.isfile(options.addrefseq):
             append_refseq = "cat "+options.addrefseq+" >> "+RETR_SEQ_FILEPATH
             system(append_refseq)
-            print "Added reference sequences from "+options.addrefseq+" to set to cluster"
             logfile.write("Added reference sequences from "+options.addrefseq+" to set to cluster\n")
 
     # Shorten the sequences that are too long, since blastclust seems to have
@@ -417,8 +394,6 @@ if options.blastclust:
     try:
         fluff.limit_sequence_length(RETR_SEQ_FILEPATH,64) # limit to 64 columns of sequence
     except fluff.PathError, e:
-        print e.message
-        print "\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory"
         logfile.write(e.message+"\n")
         logfile.write("\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory\n")
         exit(1)
@@ -434,7 +409,6 @@ if options.blastclust:
     try:
         unique_sequences = fluff.uniqueify_seqids(SeqFilename,UnSeqFilename)
     except ValueError:
-        print "Could not uniqueify the sequence IDs!"
         logfile.write("Could not uniqueify the sequence IDs!\n")
         fluff.cleanup(TMPDIR)
         exit(1)
@@ -443,7 +417,6 @@ if options.blastclust:
     # Run formatdb on the file outputted from uniqueify_seqids and
     # then run blastclust to cluster results (all in one function)
     t = time.asctime(time.localtime())
-    print "Creating temporary database and running blastclust at: ",t
     logfile.write("Creating temporary database and running blastclust at: "+t+"\n")
     logfile.flush()
 
@@ -461,22 +434,17 @@ if options.blastclust:
         blastclust_return_text, blastclust_output = fluff.run_blastclust(UnSeqFilename,PercentIdentity,CovThreshold,numcores)
 
         if "error" in blastclust_return_text:
-            print blastclust_output
             logfile.write(blastclust_output+"\n")
             fluff.cleanup(TMPDIR)
             exit(1)
         elif "ERROR" in blastclust_output[1]:
-            print blastclust_output[1]
             logfile.write(blastclust_output[1]+"\n")
             fluff.cleanup(TMPDIR)
             exit(1)
         else:
-            print blastclust_return_text
-            print blastclust_output[0],
             logfile.write(blastclust_return_text+"\n"+blastclust_output[0])
 
     except fluff.PathError, e:
-        print e.message, "\n", UnSeqFilename
         logfile.write(e.message+"\n"+UnSeqFilename+"\n")
         fluff.cleanup(TMPDIR)
         exit(1)
@@ -487,12 +455,10 @@ if options.blastclust:
     try:
         parsedblastclust = fluff.parse_blastclust(blastclustoutputfile)
     except fluff.PathError, e:
-        print e.message, "\n", blastclustoutputfile
         logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
         fluff.cleanup(TMPDIR)
         exit(1)
     except ValueError:
-        print "ERROR: Found nothing in blastclust output:", blastclustoutputfile
         logfile.write("ERROR: Found nothing in blastclust output: "+blastclustoutputfile+"\n")
         fluff.cleanup(TMPDIR)
         exit(1)
@@ -508,11 +474,9 @@ if options.blastclust:
         pkfile = open(''.join([TMPDIR,"pickled.hsseq"]),'rb')
         scores_ids = pickle.load(pkfile)
     except IOError:
-        print "Could not read the pickled high-scoring sequences (pickled.hsseq)"
         logfile.write("Could not read the pickled high-scoring sequences (pickled.hsseq)\n")
         fluff.cleanup(TMPDIR)
     except pickle.UnpicklingError:
-        print "Could not unpickle pickled.hsseq!"
         logfile.write("Could not unpickle pickled.hsseq!\n")
         fluff.cleanup(TMPDIR)
 
@@ -520,7 +484,6 @@ if options.blastclust:
     # one with clean clusters and one with scores
     clusterfilename = RESDIR+"/identified_clusters"
     withscoresfilename = RESDIR+"/identified_clusters.scores"
-    print "The identified clusters are written to:",clusterfilename
     logfile.write("The identified clusters are written to: "+clusterfilename+"\n")
     clusterout = open(clusterfilename,"w")
     withscores = open(withscoresfilename,"w")
@@ -539,10 +502,8 @@ if options.blastclust:
     withscores.close()
 
     t = time.asctime(time.localtime())
-    print "Finished clustering sequences at: "+t
     logfile.write("Finished clustering sequences at: "+t+"\n")
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
     logfile.flush()
 
 
@@ -553,10 +514,8 @@ if options.blastclust:
     pickle.dump(data,outpickle)
     outpickle.close()
 else:
-    print "Not clustering sequences"
     logfile.write("Not clustering sequences\n")
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
 
 
 
@@ -588,11 +547,9 @@ if options.alignment:
     try:
         parsedblastclust, scores_ids = pickle.load(open(''.join([TMPDIR,"pickled.clusters"]),'rb'))
     except IOError:
-        print "Could not read the pickled clusters (pickled.clusters)"
         logfile.write("Could not read the pickled clusters (pickled.clusters)\n")
         fluff.cleanup(TMPDIR)
     except pickle.UnpicklingError:
-        print "Could not unpickle pickled.clusters!"
         logfile.write("Could not unpickle pickled.clusters!\n")
         fluff.cleanup(TMPDIR)
 
@@ -602,8 +559,6 @@ if options.alignment:
         if options.alignseqpath:
             # Log that we started aligning
             t = time.asctime(time.localtime())
-            print t+"\nPerforming multiple alignment within identified clusters and "\
-                  "cluster vs reference genes"
             logfile.write(t+"\nPerforming multiple alignment within identified clusters and "\
                   "cluster vs reference genes\n")
             logfile.flush()
@@ -614,30 +569,22 @@ if options.alignment:
                                                 QNR_REFERENCE_SEQUENCES_PATH,
                                                 TMPDIR)
             else:
-                print ("Filename supplied with -R flag was invalid, NOT aligning"
-                       " against any reference sequences.")
                 logfile.write("Filename supplied with -R flag was invalid, NOT aligning"
                        " against any reference sequences.\n")
                 retcode = fluff.malign_clusters(parsedblastclust, RESDIR, "", TMPDIR)
             if retcode == 1:
-                print "No clusters contained more than one member, nothing to align!"
                 logfile.write("No clusters contained more than one member, nothing to align!\n")
             elif retcode == 2:
-                print "Could not align sequences using 'mafft'. Is MAFFT properly installed?"
                 logfile.write("Could not align sequences using 'mafft'. Is MAFFT properly installed?\n")
                 fluff.cleanup(TMPDIR)
                 exit(1)
             else:
-                print ("Multiple alignments complete\n" \
-                       "MAFFT alignments are in files " \
-                       "'*.aligned' in "+RESDIR)
                 logfile.write("Multiple alignments complete\n" \
                        "MAFFT alignments are in files " \
                        "'*.aligned' in "+RESDIR+"\n")
         else:
             # Log that we started aligning
             t = time.asctime(time.localtime())
-            print t+"\nPerforming multiple alignment within identified clusters"
             logfile.write(t+"\nPerforming multiple alignment within identified clusters\n")
             logfile.flush()
 
@@ -646,32 +593,22 @@ if options.alignment:
                                             refseqpath="",
                                             workdir=TMPDIR)
             if retcode == 1:
-                print "No clusters contained more than one member, nothing to align!"
                 logfile.write("No clusters contained more than one member, nothing to align!\n")
             elif retcode == 2:
-                print "Could not align sequences using 'mafft'. Is MAFFT properly installed?"
                 logfile.write("Could not align sequences using 'mafft'. Is MAFFT properly installed?\n")
                 fluff.cleanup(TMPDIR)
                 exit(1)
             else:
-                print ("Multiple alignments complete\n"\
-                       "MAFFT alignments are in files "\
-                       "'*.aligned' in "+RESDIR)
                 logfile.write("Multiple alignments complete\n" \
                        "MAFFT alignments are in files " \
                        "'*.aligned' in "+RESDIR+"\n")
 
     except fluff.PathError, e:
-        print e.message
         logfile.write(e.message+"\n")
-
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
 else:
-    print "Not aligning clusters"
     logfile.write("Not aligning clusters\n")
-    print logfileseparator
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
 
 ## ---------------------------------------------------------------------------- ##
 #                       |          |                                             #
@@ -688,16 +625,12 @@ if options.hmmsearch and options.extracthits and options.blastclust and options.
     infostring = ("                        PIPELINE STATISTICS\n"+
                   "Total number of characters searched (nucleotides/residues): "+
                   str(total_residues)+"\n")
-    print infostring,
-    print logfileseparator
     logfile.write(infostring)
-    logfile.write(logfileseparator+"\n")
+    logfile.line()
 
 # Cleanup and exit
 t = time.asctime(time.localtime())
-print "Cleaning up, pipeline finished at: "+t
-print logfileseparator
 logfile.write("Cleaning up, pipeline finished at: "+t+"\n")
-logfile.write(logfileseparator+"\n")
+logfile.line()
 fluff.cleanup(TMPDIR)
 exit(0)

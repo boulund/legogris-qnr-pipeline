@@ -3,7 +3,7 @@ import shlex
 import subprocess
 from datetime import date
 import time
-logfileseparator = "----------------------------------------------------------------------"
+
 class HMMSearch:
     def __init__(self, logfile):
         self.logfile = logfile
@@ -35,7 +35,6 @@ class HMMSearch:
         ## HMMsearch with the settings defined above
         # Print a log of the hmmsearch run settings
         logfile.write("Running hmmsearch at:"+t+"\n")
-        print "Running hmmsearch at:",t
         #logfile.write("Model used                       : "+path.basename(model)+"\n")
         #logfile.write("Output directory                 : "+hmmsearch_outdir+"\n")
         #logfile.write("CPU-flag (no flag means one cpu) : "+cpuflag+"\n")
@@ -65,9 +64,6 @@ class HMMSearch:
                 output = subprocess.Popen(hmmsearch, stdin=subprocess.PIPE,
                                             stderr=subprocess.PIPE).communicate()
                 if "Error: Failed to open hmm file" in output[1]:
-                    print "CATASTROPHIC: Could not open HMM:",model
-                    print "Make sure 'model.hmm' is available in current directory or"
-                    print "supply the -m argument with path to your HMM file"
                     logfile.write("CATASTROPHIC: Could not open HMM: "+model+"\n")
                     logfile.write("Make sure 'model.hmm' is available in current directory or\n")
                     logfile.write("supply the -m argument with path to your HMM file\n")
@@ -76,19 +72,15 @@ class HMMSearch:
                     args.append(hmmsearch[6]) # 5 contains the output file path, used later
                 else:
                     args.append(hmmsearch[5]) # 5 contains the output file path, used later
-                print "Finished hmmsearch on file",database
                 logfile.write("Finished hmmsearch on file "+database+"\n")
             except OSError:
-                print "Could not open:", database
                 logfile.write("Could not open: "+database+"\n")
             logfile.flush()
 
         # Output some more details for the log
         t = time.asctime(time.localtime())
-        print "Finished hmmsearching the databases at:", t
-        print logfileseparator
         logfile.write("Finished hmmsearching the databases at: "+t+"\n")
-        logfile.write(logfileseparator+"\n")
+        logfile.line()
         logfile.flush()
         return args
 if __name__ == 'main':
