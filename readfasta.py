@@ -9,7 +9,7 @@ import berkeley
 
 def translate_fasta(inpath, outpath):
     outfile = open(outpath, 'w')
-    db = berkeley.open()
+    db = berkeley.open_fragments()
     try:
         for r in SeqIO.parse(inpath, 'fasta'):
             for j in range(0,2):

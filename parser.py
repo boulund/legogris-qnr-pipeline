@@ -2,8 +2,10 @@ from os import path, makedirs, system
 from datetime import date
 import time
 import pickle
+import json
 
 from fluff import PathError, ParseError
+import berkeley
 
 TMPDIR = "./pipeline_data/"
 
@@ -35,13 +37,17 @@ class Parser:
 
         numerrors = 0
         scores_ids = []
-        for hmmsearch_result_file in hmmsearch_result_files:
-            sequences, score_id_tuples = self.parse_file(hmmsearch_result_file, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright)
-            if sequences:
+        db = berkeley.open_fragments_passed()
+        try:
+            for hmmsearch_result_file in hmmsearch_result_files:
+                sequences = self.parse_file(hmmsearch_result_file, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright)
                 for sequence in sequences:
-                    retrseqfile.write(''.join([sequence,"\n"]))
-            scores_ids.append(score_id_tuples)
-            logfile.flush()
+                    doc = json.dumps(sequence)
+                    db.db.append(doc)
+                logfile.flush()
+        finally:
+            print "closing db"
+            db.db.close()
 
         if numerrors >= len(hmmsearch_result_files):
             logfile.write("CATASTROPHIC: No input files contains any potential hits!?\n")
@@ -49,12 +55,12 @@ class Parser:
 
         # Pickle the scores_ids for disconnected usage in other scripts
         # note that scores_ids is a very messy structure!
-        data = scores_ids
-        pickle_filename = ''.join([TMPDIR,"pickled.hsseq"])
-        outpickle = open(pickle_filename,'wb')
-        pickle.dump(data,outpickle)
-        outpickle.close()
-        retrseqfile.close()
+        #data = scores_ids
+        #pickle_filename = ''.join([TMPDIR,"pickled.hsseq"])
+        #outpickle = open(pickle_filename,'wb')
+        #pickle.dump(data,outpickle)
+        #outpickle.close()
+        #retrseqfile.close()
 
         t = time.asctime(time.localtime())
         logfile.write("Finished parsing hmmsearch output files and classifying hits at: "+t+"\n")
@@ -66,6 +72,7 @@ class Parser:
         classificationfunction = self.classificationfunction
         score_id_tuples = []
         # Open file for reading
+        sequences = []
         try:
             # Parse the hmmsearch output file -- Extract hits above minscore (0)
             logfile.write("Parsing "+hmmsearch_result_file+"\n")
@@ -73,7 +80,20 @@ class Parser:
             score_id_tuples, dbpath = parsed # Unpack parsed information
             scores,dscores,ids = zip(*score_id_tuples) # Unzip the scores/IDs
             errmessages = []
-            if retrdb:
+            if True: #For now, berkely test
+                for (score, dscore, id) in score_id_tuples:
+                    db = berkeley.open_fragments()
+                    seq = json.loads(db[id])
+                    classification = _classify_qnr(sequence_length=len(seq['protein']),
+                                                domain_score=dscore,
+                                                func=self.classificationfunction,
+                                                longseqcutoff=classifyC,
+                                                longseqdef=classifyD)
+                    if classification:
+                        seq['score'] = score
+                        seq['dscore'] = dscore
+                        sequences.append(seq)
+            elif retrdb: #TODO: berkely integration with this variation too
                 # Retrieve hits directly from their source database, if
                 # they classify correctly according to the classification
                 # function. The database needs an index file for this,
@@ -84,7 +104,7 @@ class Parser:
                                                 func=classificationfunction,
                                                 longseqcutoff=classifyC,
                                                 longseqdef=classifyD)
-            elif int(extendleft) or int(extendright):
+            elif int(extendleft) or int(extendright):#TODO: berkely integration with this variation too
                 #print "EXTENDING HITS" # DEBUG
                 # Extend the hits to the HMMER model and retrieve "a little more"
                 # around the edges of the hits, adds the sequence origin to the
@@ -98,7 +118,7 @@ class Parser:
                                                                 func=classificationfunction,
                                                                 longseqcutoff=classifyC,
                                                                 longseqdef=classifyD)
-            else:
+            else: #TODO; Fix
                 # Retrieve interesting sequences from hmmsearch output
                 # and write out to RETR_SEQ_FILEPATH
                 # This is where the sequences get their origin attached
@@ -114,12 +134,11 @@ class Parser:
             if errmessages:
                 for message in errmessages:
                     logfile.write(message)
-            print sequences
             logfile.write("Retrieved "+str(len(sequences))+" full length sequences from database\n")
             # Write the identified sequences (fragments/domains) to disk,
             # they have been classified inside the previous function and
             # non-qnr like sequences have been removed.
-            return (sequences, score_id_tuples)
+            return sequences
 
         except IOError:
             logfile.write("Could not open file for reading: "+hmmsearch_result_file+"\n")
@@ -239,7 +258,7 @@ def _retrieve_sequences_from_hmmsearch(filepath, seqid_list, min_score, dbpath,
 
     # Create a list that will hold the retrieved sequences with their
     # identifiers.
-    sequences = []
+    ids = []
 
     # Name of the database and source file, to be appended to the sequence identifier
     # Parsed out of the path to the source file, assumed to be stored accordingly:
@@ -296,7 +315,7 @@ def _retrieve_sequences_from_hmmsearch(filepath, seqid_list, min_score, dbpath,
                                 # If the current domain sequence is classified as a potential
                                 # true hit, append it to the list of sequences
                                 if classification:
-                                    sequences.append("\n".join([sequenceID, domain]))
+                                    ids.append(sequenceID)
 
                     line = file.readline()
                     # Break when we reach the end of the alignments
@@ -307,14 +326,14 @@ def _retrieve_sequences_from_hmmsearch(filepath, seqid_list, min_score, dbpath,
                         break # EOF, breaks while loop
 
     #This should never happend
-    if not sequences:
+    if not ids:
         raise ValueError # No sequence was found!
 
     # Format the sequences so that they conform
     # better to FASTA "standard"
     #sequences = _fixfasta(sequences)
 
-    return sequences
+    return ids
 ############## END retrieve_sequences_from_hmmsearch
 
 ##---------------------------------------------------------------------------##

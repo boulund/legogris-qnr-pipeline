@@ -4,14 +4,17 @@ import uuid
 import bsddb
 
 
-def create_db():
-    return bsddb.hashopen('test.db', 'n')
+def create_db(name):
+    return bsddb.hashopen(name, 'n')
 
-def open():
-    try:
-        return bsddb.hashopen('test.db', 'rw')
-    except bsddb.db.DBNoSuchFileError:
-        return create_db()
+def open_fragments_passed():
+    return bsddb.rnopen('fragments_passed.db', 'c')
+
+def open_fragments():
+    return open('fragments.db')
+
+def open(name):
+    return bsddb.hashopen(name, 'c')
 
 def test_insert():
     d = open()
