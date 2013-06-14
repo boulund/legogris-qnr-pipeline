@@ -35,6 +35,7 @@ from hmmsearch import HMMSearch
 from parser import Parser
 from logger import Logger
 from blastclust import BLASTClusterer
+import readfasta
 
 ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
@@ -326,14 +327,18 @@ logfile.line()
     ##---------------------------------------------------------------------------##
 
 if options.hmmsearch:
+    files = []
+    for fastafile in args:
+        files.append(readfasta.translate_fasta(fastafile, path.splitext(fastafile)[0]+'.pfa'))
+
     hmms = HMMSearch(logfile)
     args = hmms.search(
                 path.abspath(options.model), # Retrieve the path to the model from user set variables above
                 options.hmmsearch_outdir,
                 options.numcpu,
-                True,
+                False,
                 options.noheuristics,
-                args)
+                files)
     # Note the change in usage of variable 'args'! It now contains the hmmsearch outputfile paths
 else:
     logfile.write("Not running hmmsearch\n")

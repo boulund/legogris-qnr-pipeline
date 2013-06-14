@@ -24,7 +24,7 @@ class HMMSearch:
         heurflag = '--max' if use_heuristics else ''
         # Text wrap long lines; "--notextw" means true, empty false
         # THIS MUST BE ENABLED TO ENSURE CORRECT BEHAVIOR!
-        textwflag = '--notextw' if wrap_long_lines else ''
+        textwflag = '' if wrap_long_lines else '--notextw'
 
         args = []
 

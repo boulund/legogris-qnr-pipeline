@@ -64,6 +64,7 @@ class Parser:
     def parse_file(self, hmmsearch_result_file, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright):
         logfile = self.logfile
         classificationfunction = self.classificationfunction
+        score_id_tuples = []
         # Open file for reading
         try:
             # Parse the hmmsearch output file -- Extract hits above minscore (0)
@@ -113,6 +114,7 @@ class Parser:
             if errmessages:
                 for message in errmessages:
                     logfile.write(message)
+            print sequences
             logfile.write("Retrieved "+str(len(sequences))+" full length sequences from database\n")
             # Write the identified sequences (fragments/domains) to disk,
             # they have been classified inside the previous function and
@@ -294,7 +296,7 @@ def _retrieve_sequences_from_hmmsearch(filepath, seqid_list, min_score, dbpath,
                                 # If the current domain sequence is classified as a potential
                                 # true hit, append it to the list of sequences
                                 if classification:
-                                    sequences.append(''.join([sequence_identifier_line, domain]))
+                                    sequences.append("\n".join([sequenceID, domain]))
 
                     line = file.readline()
                     # Break when we reach the end of the alignments
@@ -310,7 +312,7 @@ def _retrieve_sequences_from_hmmsearch(filepath, seqid_list, min_score, dbpath,
 
     # Format the sequences so that they conform
     # better to FASTA "standard"
-    sequences = _fixfasta(sequences)
+    #sequences = _fixfasta(sequences)
 
     return sequences
 ############## END retrieve_sequences_from_hmmsearch
