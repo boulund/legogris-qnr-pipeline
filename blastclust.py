@@ -32,13 +32,18 @@ class BLASTClusterer:
         # that would require checking of entire sequences to ensure robustness)
         # SeqFilename = TMPDIR+"retrieved_sequences.fasta.shortened"
         # UnSeqFilename = TMPDIR+"unique_retrieved_sequences.fasta.shortened"
-        UnSeqFilename = SeqFilename+'.unique'
-        try:
-            unique_sequences = _uniqueify_seqids(SeqFilename,UnSeqFilename)
-        except ValueError:
-            logfile.write("Could not uniqueify the sequence IDs!\n")
-            cleanup(TMPDIR)
-            exit(1)
+
+        #Removed b/c of berkeley
+        #UnSeqFilename = SeqFilename+'.unique'
+        #try:
+        #    unique_sequences = _uniqueify_seqids(SeqFilename,UnSeqFilename)
+        #except ValueError:
+        #    logfile.write("Could not uniqueify the sequence IDs!\n")
+        #    cleanup(TMPDIR)
+        #    exit(1)
+        #TODO: Make function that takes passed fragments and create sinput file for blastclust
+        #look into skipping fasta middle step?
+        filename = _create_fasta_from_passed_fragments(filepath)
 
 
         # Run formatdb on the file outputted from uniqueify_seqids and
