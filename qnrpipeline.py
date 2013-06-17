@@ -437,12 +437,6 @@ if options.blastclust:
     logfile.line()
     logfile.flush()
 
-    # pickle the clusters and scores_ids for others scripts to use as a convenience
-    data = (parsedblastclust,scores_ids)
-    pickle_filename = ''.join([TMPDIR,"pickled.clusters"])
-    outpickle = open(pickle_filename,'wb')
-    pickle.dump(data,outpickle)
-    outpickle.close()
 else:
     logfile.write("Not clustering sequences\n")
     logfile.line()
