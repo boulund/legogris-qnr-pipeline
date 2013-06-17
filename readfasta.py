@@ -7,15 +7,18 @@ import json
 
 import berkeley
 
+ITEM_LIMIT = 5
+
+#Reads FASTA file. Adds all six frames of fragments to database and a new FASTA file with new UUIDs as keys in both.
 def translate_fasta(inpath, outpath):
     outfile = open(outpath, 'w')
-    db = berkeley.open_fragments()
+    db = berkeley.open_fragments('n')
     try:
-        # n = 0
+        n = 0
         for r in SeqIO.parse(inpath, 'fasta'):
-            # n += 1
-            # if n > 5:
-            #     break
+            n += 1
+            if ITEM_LIMIT and n > ITEM_LIMIT:
+                break
             for j in range(0,2):
                 for i in range(0,3):
                     dna = r.seq[i::] if j else r.seq.reverse_complement()[i::]

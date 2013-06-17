@@ -5,16 +5,24 @@ import bsddb
 
 
 def create_db(name):
-    return bsddb.hashopen(name, 'n')
+    db = bsddb.hashopen(name, 'n')
+    db.clear()
+    return db
 
-def open_fragments_passed():
-    return bsddb.rnopen('fragments_passed.db', 'c')
+def open_fragments_passed(flag='c'):
+    return bsddb.rnopen('fragments_passed.db', flag)
 
-def open_fragments():
-    return open('fragments.db')
+def open_fragments(flag='c'):
+    return open('fragments.db', flag)
 
-def open(name):
-    return bsddb.hashopen(name, 'c')
+def open_clusters():
+    db = bsddb.db.DB()
+    db.set_flags(bsddb.db.DB_DUPSORT)
+    db.open('clusters.db', bsddb.db.DB_HASH, bsddb.db.DB_CREATE)
+    return db
+
+def open(name, flag='c'):
+    return bsddb.hashopen(name, flag)
 
 def test_insert():
     d = open()

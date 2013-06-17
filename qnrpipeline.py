@@ -30,6 +30,7 @@ import pickle
 import shlex, subprocess
 from optparse import OptionParser, OptionGroup
 import json
+import uuid
 
 import fluff
 from hmmsearch import HMMSearch
@@ -411,9 +412,13 @@ if options.blastclust:
     clusterout = open(clusterfilename,"w")
     withscores = open(withscoresfilename,"w")
     db = berkeley.open_fragments()
+    cdb = berkeley.open_clusters()
+    cdb.truncate()
     try:
         for cluster in clusters:
+            cid = uuid.uuid4().hex
             for seqID in cluster:
+                cdb.put(cid, json.dumps(seqID))
                 clusterout.write(''.join([seqID," "]))
                 seq = json.loads(db[seqID])
                 withscores.write(''.join([seqID,"--",
@@ -424,6 +429,7 @@ if options.blastclust:
         clusterout.close()
         withscores.close()
         db.close()
+        cdb.close()
 
     t = time.asctime(time.localtime())
     logfile.write("Found " + str(len(clusters)) + " clusters")

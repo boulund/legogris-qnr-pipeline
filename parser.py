@@ -37,7 +37,7 @@ class Parser:
 
         numerrors = 0
         scores_ids = []
-        db = berkeley.open_fragments_passed()
+        db = berkeley.open_fragments_passed('n')
         try:
             for hmmsearch_result_file in hmmsearch_result_files:
                 sequences = self.parse_file(hmmsearch_result_file, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright)
@@ -81,7 +81,7 @@ class Parser:
             scores,dscores,ids = zip(*score_id_tuples) # Unzip the scores/IDs
             errmessages = []
             if True: #For now, berkely test
-                db = berkeley.open_fragments()
+                db = berkeley.open_fragments('rw')
                 try:
                     for (score, dscore, id) in score_id_tuples:
                         seq = json.loads(db[id])
