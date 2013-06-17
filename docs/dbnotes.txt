@@ -3,6 +3,8 @@
 Name
 DNA
 AA
+Frame
+*HMM_Score:
 *Passed_HMM?
 
 ==Contig==

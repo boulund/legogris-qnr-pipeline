@@ -11,7 +11,11 @@ def translate_fasta(inpath, outpath):
     outfile = open(outpath, 'w')
     db = berkeley.open_fragments()
     try:
+        # n = 0
         for r in SeqIO.parse(inpath, 'fasta'):
+            # n += 1
+            # if n > 5:
+            #     break
             for j in range(0,2):
                 for i in range(0,3):
                     dna = r.seq[i::] if j else r.seq.reverse_complement()[i::]

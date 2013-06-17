@@ -81,18 +81,25 @@ class Parser:
             scores,dscores,ids = zip(*score_id_tuples) # Unzip the scores/IDs
             errmessages = []
             if True: #For now, berkely test
-                for (score, dscore, id) in score_id_tuples:
-                    db = berkeley.open_fragments()
-                    seq = json.loads(db[id])
-                    classification = _classify_qnr(sequence_length=len(seq['protein']),
-                                                domain_score=dscore,
-                                                func=self.classificationfunction,
-                                                longseqcutoff=classifyC,
-                                                longseqdef=classifyD)
-                    if classification:
-                        seq['score'] = score
-                        seq['dscore'] = dscore
-                        sequences.append(seq)
+                db = berkeley.open_fragments()
+                try:
+                    for (score, dscore, id) in score_id_tuples:
+                        seq = json.loads(db[id])
+                        classification = _classify_qnr(sequence_length=len(seq['protein']),
+                                                    domain_score=dscore,
+                                                    func=self.classificationfunction,
+                                                    longseqcutoff=classifyC,
+                                                    longseqdef=classifyD)
+                        if classification:
+                            print 'Classy!'
+                            seq['score'] = score
+                            seq['dscore'] = dscore
+                            db[id] = json.dumps(seq)
+                            sequences.append(seq)
+                        else:
+                            print classification
+                finally:
+                    db.close()
             elif retrdb: #TODO: berkely integration with this variation too
                 # Retrieve hits directly from their source database, if
                 # they classify correctly according to the classification
@@ -152,53 +159,6 @@ class Parser:
             logfile.write(e.message+"\n")
         return ([], score_id_tuples)
 
-##-----------------------------------------------##
-##            FIX FASTA FORMATTING               ##
-##-----------------------------------------------##
-def _fixfasta(sequences):
-    '''
-    Takes a list of sequences and tries to correct their
-    formatting.
-
-    Designed to be used only in the
-    the function retrieve_sequences_from_hmmsearch.
-
-    Input::
-
-        sequences   list of sequences, each in one
-                    complete string with \n markers
-                    between identifier line and sequence.
-
-    Returns::
-
-        outsequences   list of sequences with hopefully
-                    better formatting.
-
-    Errors::
-
-        (none)
-    '''
-
-    from math import ceil
-
-    outsequences = []
-    for sequence in sequences:
-        splitstring = sequence.split("\n",1)
-        number_of_rows = int(ceil(len(splitstring[1]) / 80.0))
-        seq = []
-        if number_of_rows > 1:
-            for row in xrange(1,number_of_rows):
-                seq.append(splitstring[1][:80] + "\n")
-                splitstring[1] = splitstring[1][80:]
-            seq.append(splitstring[1]) # + "\n")
-            seq.insert(0,splitstring[0] + "\n")
-            seq = ''.join(seq)
-        else:
-            seq = sequence
-        outsequences.append(seq)
-
-    return outsequences
-############## END fixfasta
 
 
 ##-----------------------------------------------##
@@ -331,7 +291,7 @@ def _retrieve_sequences_from_hmmsearch(filepath, seqid_list, min_score, dbpath,
 
     # Format the sequences so that they conform
     # better to FASTA "standard"
-    #sequences = _fixfasta(sequences)
+    #sequences = fluff.fixfastas(sequences)
 
     return ids
 ############## END retrieve_sequences_from_hmmsearch

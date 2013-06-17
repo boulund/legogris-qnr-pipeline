@@ -29,6 +29,7 @@ import time
 import pickle
 import shlex, subprocess
 from optparse import OptionParser, OptionGroup
+import json
 
 import fluff
 from hmmsearch import HMMSearch
@@ -36,6 +37,7 @@ from parser import Parser
 from logger import Logger
 from blastclust import BLASTClusterer
 import readfasta
+import berkeley
 
 ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
@@ -398,7 +400,7 @@ if options.blastclust:
             system(append_refseq)
             logfile.write("Added reference sequences from "+options.addrefseq+" to set to cluster\n")
 
-    clusters, parsedblastclust, scores_ids = aligner.run(RETR_SEQ_FILEPATH, options.numcpu, options.percent_identity, options.cov_threshold)
+    clusters = aligner.run(RETR_SEQ_FILEPATH, options.numcpu, options.percent_identity, options.cov_threshold)
 
 
     # Output the identified cluster to files,
@@ -408,21 +410,23 @@ if options.blastclust:
     logfile.write("The identified clusters are written to: "+clusterfilename+"\n")
     clusterout = open(clusterfilename,"w")
     withscores = open(withscoresfilename,"w")
-    for cluster in clusters:
-        for seqID in cluster:
-            clusterout.write(''.join([seqID," "]))
-            for database in scores_ids:
-                for info in database:
-                    seqscore, domscore, seqid = info
-                    if seqid in seqID:
-                        withscores.write(''.join([seqID,"--",
-                                         str(seqscore),"--",str(domscore),' ']))
-        clusterout.write("\n")
-        withscores.write("\n")
-    clusterout.close()
-    withscores.close()
+    db = berkeley.open_fragments()
+    try:
+        for cluster in clusters:
+            for seqID in cluster:
+                clusterout.write(''.join([seqID," "]))
+                seq = json.loads(db[seqID])
+                withscores.write(''.join([seqID,"--",
+                                str(seq['score']),"--",str(seq['dscore']),' ']))
+            clusterout.write("\n")
+            withscores.write("\n")
+    finally:
+        clusterout.close()
+        withscores.close()
+        db.close()
 
     t = time.asctime(time.localtime())
+    logfile.write("Found " + str(len(clusters)) + " clusters")
     logfile.write("Finished clustering sequences at: "+t+"\n")
     logfile.line()
     logfile.flush()

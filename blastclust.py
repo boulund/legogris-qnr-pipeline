@@ -2,7 +2,10 @@ from datetime import date
 import time
 import pickle
 
+import berkeley
+import json
 from fluff import PathError, cleanup
+import fluff
 
 TMPDIR = "./pipeline_data/"
 
@@ -43,7 +46,7 @@ class BLASTClusterer:
         #    exit(1)
         #TODO: Make function that takes passed fragments and create sinput file for blastclust
         #look into skipping fasta middle step?
-        filename = _create_fasta_from_passed_fragments(filepath)
+        filename = _create_fasta_from_passed_fragments()
 
 
         # Run formatdb on the file outputted from uniqueify_seqids and
@@ -57,7 +60,7 @@ class BLASTClusterer:
             #              " Percent identity: "+str(percent_identity)+"\n Coverage Threshold: "+ \
             #              str(cov_threshold)+"\n Number of CPUs: "+str(numcores)+"\n")
 
-            blastclust_return_text, blastclust_output = _run_blastclust(UnSeqFilename,percent_identity,cov_threshold,numcores)
+            blastclust_return_text, blastclust_output = _run_blastclust(filename,percent_identity,cov_threshold,numcores)
 
             if "error" in blastclust_return_text:
                 logfile.write(blastclust_output+"\n")
@@ -71,15 +74,15 @@ class BLASTClusterer:
                 logfile.write(blastclust_return_text+"\n"+blastclust_output[0])
 
         except PathError, e:
-            logfile.write(e.message+"\n"+UnSeqFilename+"\n")
+            logfile.write(e.message+"\n"+filename+"\n")
             cleanup(TMPDIR)
             exit(1)
 
 
         # Parse output from blastclust (and de-uniqueify sequences IDs -- not needed anymore)
-        blastclustoutputfile = UnSeqFilename+".clusters"
+        blastclustoutputfile = filename+".clusters"
         try:
-            parsedblastclust = _parse_blastclust(blastclustoutputfile)
+            clusters = _parse_blastclust(blastclustoutputfile)
         except PathError, e:
             logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
             cleanup(TMPDIR)
@@ -89,22 +92,27 @@ class BLASTClusterer:
             cleanup(TMPDIR)
             exit(1)
 
-        # Deunique:ify sequence IDs parsed from blastclust output,
-        # needed only for writing out cluster scores later on
-        clusters = _deuniqueify_seqids(parsedblastclust)
+        return clusters
 
-        # Unpickle the scores_ids (needed for being able to run clustering separately)
-        # Really unnecessary to do all the time but does not really matter
-        try:
-            pkfile = open(''.join([TMPDIR,"pickled.hsseq"]),'rb')
-            scores_ids = pickle.load(pkfile)
-        except IOError:
-            logfile.write("Could not read the pickled high-scoring sequences (pickled.hsseq)\n")
-            cleanup(TMPDIR)
-        except pickle.UnpicklingError:
-            logfile.write("Could not unpickle pickled.hsseq!\n")
-            cleanup(TMPDIR)
-        return (clusters, parsedblastclust, scores_ids)
+def _fragment_to_fasta(fragment, sequence='DNA'):
+    if sequence == 'DNA':
+        return fluff.fixfasta(''.join(['>', fragment['id'], '\n', fragment['dna'], '\n']))
+    if sequence == 'AA': #Amino acids
+        return fluff.fixfasta(''.join(['>', fragment['id'], '\n', fragment['aa'], '\n']))
+
+def _create_fasta_from_passed_fragments():
+    outfile = open(''.join([TMPDIR, 'blastclust.fasta']), 'w')
+    try:
+        db = berkeley.open_fragments_passed()
+        for i in db.items():
+            outfile.write(_fragment_to_fasta(json.loads(i[1])))
+        return outfile.name
+    except IOError:
+        logfile.write('Error opening BLASTclust FASTA temp file')
+        cleanup(TMPDIR)
+        exit(1)
+    finally:
+        outfile.close()
 
 ##-----------------------------------------------##
 ##              LIMIT SEQUENCE LENGTH            ##
@@ -346,6 +354,8 @@ def _run_blastclust(filename,PercentIdentity=90,CovThreshold=50,numcores=4):
                               " -o ",filename,".clusters"])
     try:
         blastclust = shlex.split(blastclust_call)
+        print "Running BLASTclust!"
+
         blastclust_output = subprocess.Popen(blastclust,\
                                 stdout=subprocess.PIPE,\
                                 stderr=subprocess.PIPE).communicate()
