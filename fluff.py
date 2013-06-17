@@ -120,7 +120,7 @@ def fixfastas(sequences):
 
 def fragment_to_fasta(fragment, sequence='protein', id='id'):
     seq = (fragment['dna'] if sequence == 'dna' else fragment['protein'])
-    _id = (fragment['id'] if id == 'id' else fragment['name'])
+    _id = fragment[id]
     return fixfasta(''.join(['>', _id, '\n', seq, '\n']))
 
 ##-----------------------------------------------##

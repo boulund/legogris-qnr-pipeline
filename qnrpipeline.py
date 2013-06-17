@@ -419,9 +419,9 @@ if options.blastclust:
             cid = uuid.uuid4().hex
             for seqID in cluster:
                 cdb.put(cid, seqID)
-                clusterout.write(''.join([seqID," "]))
                 seq = json.loads(db[seqID])
-                withscores.write(''.join([seqID,"--",
+                clusterout.write(''.join([seq['name']," "]))
+                withscores.write(''.join([seq['name'],"--",
                                 str(seq['score']),"--",str(seq['dscore']),' ']))
             clusterout.write("\n")
             withscores.write("\n")

@@ -26,7 +26,8 @@ def translate_fasta(inpath, outpath):
                     seq = {'id': uuid.uuid4().hex,
                         'dna': str(dna),
                         'protein': str(dna.translate(table=11)),
-                        'name': r.description + '_' + str(frame), #or .name or .id for shorter
+                        'name': ''.join([r.name, '_', str(frame)]),
+                        'description': ''.join([r.description, '_', str(frame)]), #or .name or .id for shorter
                         'frame': frame
                         }
                     db[seq['id']] = json.dumps(seq)
