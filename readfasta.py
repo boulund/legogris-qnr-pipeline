@@ -22,11 +22,12 @@ def translate_fasta(inpath, outpath):
             for j in range(0,2):
                 for i in range(0,3):
                     dna = r.seq[i::] if j else r.seq.reverse_complement()[i::]
+                    frame = i+1 + 3*j
                     seq = {'id': uuid.uuid4().hex,
                         'dna': str(dna),
                         'protein': str(dna.translate(table=11)),
-                        'name': r.name,
-                        'frame': i+1 + 3*j
+                        'name': r.description + '_' + str(frame), #or .name or .id for shorter
+                        'frame': frame
                         }
                     db[seq['id']] = json.dumps(seq)
                     outfile.write('>')

@@ -118,11 +118,10 @@ def fixfastas(sequences):
     return outsequences
 ############## END fixfasta
 
-def fragment_to_fasta(fragment, sequence='AA'):
-    if sequence == 'DNA':
-        return fixfasta(''.join(['>', fragment['id'], '\n', fragment['dna'], '\n']))
-    if sequence == 'AA': #Amino acids
-        return fixfasta(''.join(['>', fragment['id'], '\n', fragment['protein'], '\n']))
+def fragment_to_fasta(fragment, sequence='protein', id='id'):
+    seq = (fragment['dna'] if sequence == 'dna' else fragment['protein'])
+    _id = (fragment['id'] if id == 'id' else fragment['name'])
+    return fixfasta(''.join(['>', _id, '\n', seq, '\n']))
 
 ##-----------------------------------------------##
 ## MULTIPLE ALIGNMENT WITHIN AND BETWEEN CLUSTERS##
@@ -186,7 +185,7 @@ def malign_clusters(clusters,resdir,refseqpath,seqfilepath):
 
             # Find sequences for all sequence IDs in cluster and write to file
             for fragment in cluster:
-                malignfile.write(fragment_to_fasta(fragment))
+                malignfile.write(fragment_to_fasta(fragment, id='name'))
             malignfile.close()
 
             # Set parameters etc for clustalw and make alignment
