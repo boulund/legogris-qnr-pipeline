@@ -418,7 +418,7 @@ if options.blastclust:
         for cluster in clusters:
             cid = uuid.uuid4().hex
             for seqID in cluster:
-                cdb.put(cid, json.dumps(seqID))
+                cdb.put(cid, seqID)
                 clusterout.write(''.join([seqID," "]))
                 seq = json.loads(db[seqID])
                 withscores.write(''.join([seqID,"--",
@@ -468,6 +468,17 @@ if options.alignment:
 
     # Unpickle parsedblastclust (needed for being able to run alignment separately)
     # Really unnecessary to do every time but does not really matter
+    clusters = {}
+    cdb = berkeley.open_clusters()
+    fdb = berkeley.open_fragments()
+    try:
+        for (cid, fid) in cdb.items():
+            if not cid in clusters:
+                clusters[cid] = []
+            clusters[cid].append(json.loads(fdb[fid]))
+    finally:
+        fdb.close()
+        cdb.close()
     try:
         parsedblastclust, scores_ids = pickle.load(open(''.join([TMPDIR,"pickled.clusters"]),'rb'))
     except IOError:
@@ -489,7 +500,7 @@ if options.alignment:
 
             # Check that the reference sequence path is valid
             if path.isfile(QNR_REFERENCE_SEQUENCES_PATH):
-                retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
+                retcode = fluff.malign_clusters(clusters, RESDIR,
                                                 QNR_REFERENCE_SEQUENCES_PATH,
                                                 TMPDIR)
             else:
@@ -513,7 +524,7 @@ if options.alignment:
             logfile.flush()
 
             # Align the clusters
-            retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
+            retcode = fluff.malign_clusters(clusters, RESDIR,
                                             refseqpath="",
                                             seqfilepath=RETR_SEQ_FILEPATH+'.shortened.unique')
             if retcode == 1:

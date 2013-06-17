@@ -7,7 +7,7 @@ import json
 
 import berkeley
 
-ITEM_LIMIT = 5
+ITEM_LIMIT = 0
 
 #Reads FASTA file. Adds all six frames of fragments to database and a new FASTA file with new UUIDs as keys in both.
 def translate_fasta(inpath, outpath):

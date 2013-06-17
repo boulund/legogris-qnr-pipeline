@@ -94,18 +94,13 @@ class BLASTClusterer:
 
         return clusters
 
-def _fragment_to_fasta(fragment, sequence='DNA'):
-    if sequence == 'DNA':
-        return fluff.fixfasta(''.join(['>', fragment['id'], '\n', fragment['dna'], '\n']))
-    if sequence == 'AA': #Amino acids
-        return fluff.fixfasta(''.join(['>', fragment['id'], '\n', fragment['aa'], '\n']))
 
 def _create_fasta_from_passed_fragments():
     outfile = open(''.join([TMPDIR, 'blastclust.fasta']), 'w')
     try:
         db = berkeley.open_fragments_passed()
         for i in db.items():
-            outfile.write(_fragment_to_fasta(json.loads(i[1])))
+            outfile.write(fluff.fragment_to_fasta(json.loads(i[1])))
         return outfile.name
     except IOError:
         logfile.write('Error opening BLASTclust FASTA temp file')

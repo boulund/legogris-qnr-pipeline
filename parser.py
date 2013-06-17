@@ -91,13 +91,12 @@ class Parser:
                                                     longseqcutoff=classifyC,
                                                     longseqdef=classifyD)
                         if classification:
-                            print 'Classy!'
                             seq['score'] = score
                             seq['dscore'] = dscore
                             db[id] = json.dumps(seq)
                             sequences.append(seq)
                         else:
-                            print classification
+                            print "Not classified:", classification
                 finally:
                     db.close()
             elif retrdb: #TODO: berkely integration with this variation too
