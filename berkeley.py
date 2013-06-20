@@ -12,6 +12,9 @@ def create_db(name):
 def open_fragments_passed(flag='c'):
     return bsddb.rnopen('fragments_passed.db', flag)
 
+def open_dna_input(flag='c'):
+    return open('dna-input.db', flag)
+
 def open_fragments(flag='c'):
     return open('fragments.db', flag)
 

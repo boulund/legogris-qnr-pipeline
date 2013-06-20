@@ -123,6 +123,25 @@ def fragment_to_fasta(fragment, sequence='protein', id='id'):
     _id = fragment[id]
     return fixfasta(''.join(['>', _id, '\n', seq, '\n']))
 
+def parse_fasta(filename):
+    sequences = []
+    tempseqid = ''
+    tempseq = []
+    try:
+        seqfile = open(filename,'r')
+        for line in seqfile:
+            if line.startswith('>'):
+                seq = { 'id': tempseqid, 'dna': ''.join(tempseq) }
+                sequences.append(seq)
+                tempseqid = line[1::]
+                tempseq = []
+            elif not line.startswith(">"):
+                tempseq.append(line)
+        seq = { 'id': tempseqid, 'dna': ''.join(tempseq) }
+        sequences.append(seq)
+        return sequences
+    except OSError:
+        raise PathError(''.join(['ERROR: cannot open', refseqpath]))
 ##-----------------------------------------------##
 ## MULTIPLE ALIGNMENT WITHIN AND BETWEEN CLUSTERS##
 ##-----------------------------------------------##
@@ -219,21 +238,8 @@ def malign_clusters(clusters,resdir,refseqpath,seqfilepath):
     if refseqpath is not "":
         # Read the reference sequences from the path specified
         # Each element in the list is a complete sequence
-        refsequences = []
-        tempseqid = ""
-        tempseq = ""
-        try:
-            seqfile = open(refseqpath,'r')
-            for line in seqfile:
-                if line.startswith(">"):
-                    refsequences.append(''.join([tempseqid,tempseq]))
-                    tempseqid = line
-                    tempseq = ""
-                elif not line.startswith(">"):
-                    tempseq = ''.join([tempseq,line])
-            refsequences.append(''.join([tempseqid,tempseq]))
-        except OSError:
-            raise PathError(''.join(["ERROR: cannot open", refseqpath]))
+        refsequences = parse_fasta(refseqpath)
+
 
 
         # Perform multiple alignment against all reference plasmid mediated qnr-genes
