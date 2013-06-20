@@ -13,21 +13,36 @@ import re
 
 import berkeley
 
-
 _ITEM_LIMIT = 0
 _COMPLEMENTS = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-_GENCODE = { 'ATA':'I',
-    'ATC':'I', 'ATT':'I', 'ATG':'M', 'ACA':'T', 'ACC':'T', 'ACG':'T',
-    'ACT':'T', 'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K', 'AGC':'S',
-    'AGT':'S', 'AGA':'R', 'AGG':'R', 'CTA':'L', 'CTC':'L', 'CTG':'L',
-    'CTT':'L', 'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P', 'CAC':'H',
-    'CAT':'H', 'CAA':'Q', 'CAG':'Q', 'CGA':'R', 'CGC':'R', 'CGG':'R',
-    'CGT':'R', 'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V', 'GCA':'A',
-    'GCC':'A', 'GCG':'A', 'GCT':'A', 'GAC':'D', 'GAT':'D', 'GAA':'E',
-    'GAG':'E', 'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G', 'TCA':'S',
-    'TCC':'S', 'TCG':'S', 'TCT':'S', 'TTC':'F', 'TTT':'F', 'TTA':'L',
-    'TTG':'L', 'TAC':'Y', 'TAT':'Y', 'TAA':'*', 'TAG':'*', 'TGC':'C',
-    'TGT':'C', 'TGA':'*', 'TGG':'W', }
+#TODO: codontablegen.py
+_GENCODE = {
+  re.compile('TT[TCY]'): 'F',
+  re.compile('TT[AGR]'): 'L',
+  re.compile('CT.'): 'L',
+  re.compile('AT[TCAYWMH]'): 'I',
+  re.compile('ATG'): 'M',
+  re.compile('GT.'): 'V',
+  re.compile('TC.'): 'S',
+  re.compile('CC.'): 'P',
+  re.compile('AC.'): 'T',
+  re.compile('GC.'): 'A',
+  re.compile('TA[TCY]'): 'Y',
+  re.compile('TA[AGR]'): '*',
+  re.compile('CA[TCY]'): 'H',
+  re.compile('CA[AGR]'): 'Q',
+  re.compile('AA[TCY]'): 'N',
+  re.compile('AA[AGR]'): 'K',
+  re.compile('GA[TCY]'): 'D',
+  re.compile('GA[AGR]'): 'E',
+  re.compile('TG[TCY]'): 'C',
+  re.compile('TGA'): '*',
+  re.compile('TGG'): 'W',
+  re.compile('CG.'): 'R',
+  re.compile('AG[TCY]'): 'S',
+  re.compile('AG[AGR]'): 'R',
+  re.compile('GG.'): 'G'
+}
 
 class LineReader(object):
     def __init__(self, fd, transeq, indb, outdb):
@@ -87,10 +102,11 @@ class LineReader(object):
 #Reads FASTA file. Adds all six frames of fragments to database and a new FASTA file with new UUIDs as keys in both.
 def translate_fasta(inpath, outpath):
     outfile = open(outpath, 'w')
+    outdb = berkeley.open_fragments('n')
     db = {} #berkeley.open_dna_input('n')
     outdb = berkeley.open_fragments('n')
-    p = subprocess.Popen(args, stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=-1)
-    lr = LineReader(p.stdout, p.stdin, db, outdb)
+    #p = subprocess.Popen(args, stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=-1)
+    #lr = LineReader(p.stdout, p.stdin, db, outdb)
     infile = open(inpath,'r')
     #First step: Parse fasta file, save fragments to db and pipe to transeq process
     print('Start', time.asctime(time.localtime()))
@@ -98,45 +114,37 @@ def translate_fasta(inpath, outpath):
         n = 0
         tempseq = []
         for line in infile:
-            lr.process(ne)
             if line.startswith('>'):
                 n += 1
                 if _ITEM_LIMIT and n > _ITEM_LIMIT:
                     break
                 if len(tempseq) > 0:
-                    pass
-                    _save_sequence(seqid, seqdesc, ''.join(tempseq), db, p)
-                (lr.seqid, lr.seqdesc) = line[1::].split(' ', 1)
+                    for frame in range(1,4):
+                        dna = _construct_sequence(seqid, ''.join(tempseq), frame, False)
+                        protein = _translate_dna(dna)
+                        seq = {
+                            'id': uuid.uuid4().hex,
+                            'dna': dna,
+                            'protein': protein,
+                            'name': seqid,
+                            'description': seqdesc.lstrip(),
+                            'frame': int(frame)
+                        }
+                        outdb[seqid] = json.dumps(seq)
+
+                (seqid, seqdesc) = line[1::].split(' ', 1)
                 tempseq = []
             else:
                 tempseq.append(line.rstrip())
-        _save_sequence(seqid, seqdesc, ''.join(tempseq), db, p)
+        #TODO: Save the last one too
     except OSError:
         raise PathError(''.join(['ERROR: cannot open', refseqpath]))
     finally:
-        p.stdin.close()
         infile.close()
         outfile.close()
         outdb.close()
-    #Second step: Get back result from transeq, put in new db
-    print('Half time', time.asctime(time.localtime()))
-    try:
-        indb = berkeley.open_dna_input('r')
-        outdb = berkeley.open_fragments('n')
-        frames = []
-        tempseq = []
-        for line in p.stdout:
-            pass
-        #_save_translations(frames, indb, outdb)
-    finally:
-        indb.close()
-        outdb.close()
-    print('Done', time.asctime(time.localtime()))
 
-args = shlex.split('transeq -frame 6 -table 11 -filter -snucleotide1 -sformat1 fasta')
 fasta_regex = re.compile('>([^\s]*_([0-6]))([^\r\n]*)\n([^>]+)')
-
-
 
 def _save_sequence(name, desc, dna, db, transeq):
     s = ''.join(['>',name,' ', desc, '\n',dna,'\n'])
@@ -173,15 +181,19 @@ def _construct_sequence(name, dna, frame=1, reverse=False):
         frame += 3
     else:
         dna = dna[frame-1::]
-    return
+    return dna
 
 def _translate_dna(dna):
     pseq = []
     for i in xrange(0, len(dna), 3):
         codon = dna[i:i+3]
-        if _GENCODE.has_key(codon):
-            pseq.append(_GENCODE[codon])
-        else:
+        match = False
+        for (rex, acid) in _GENCODE.items():
+            if rex.match(codon):
+                pseq.append(acid)
+                match = True
+                break
+        if not match:
             pseq.append('X')
     return ''.join(pseq)
 
