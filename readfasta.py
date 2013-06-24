@@ -1,18 +1,14 @@
 #!/usr/bin/python
 from __future__ import print_function
-from os import path
-import os
-import select
 import time
 import uuid
 import json
-import subprocess, shlex
-import re
 import random
 from collections import defaultdict
 
 import berkeley
 
+_DEBUG = True
 _ITEM_LIMIT = 0
 _COMPLEMENTS = {
     'A': 'T',
@@ -59,69 +55,15 @@ _GENCODE = defaultdict(lambda: 'X', {
     'CT': 'L', 'GT': 'V', 'TC': 'S', 'CC': 'P', 'AC': 'T', 'GC': 'A', 'CG': 'R', 'GG': 'G'
 })
 
-class LineReader(object):
-    def __init__(self, fd, transeq, indb, outdb):
-        self.transeq = transeq
-        self._fd = fd
-        self._poll = select.poll()
-        self._poll.register(fd)
-        self.frames = []
-        self.tempseq = []
-        self.seqid = ''
-        self.seqdesc = ''
-        self.indb = indb
-        self.outdb = outdb
-
-    def process(self):
-        while self._poll.poll(0):
-            self._process_line(self._fd.readline())
-
-    def _process_line(self, line):
-        if line.startswith('>'):
-            if len(self.tempseq) > 0:
-                self.frames.append((self.seqid, self.seqdesc, ''.join(self.tempseq)))
-                dna = ''
-                if len(self.frames) == 6:
-                    print('id', self.seqid)
-                    name = self._save_translations()
-                    self.frames = []
-                    del self.indb[name]
-            (self.seqid, self.seqdesc) = line[1:-1].split(' ', 1)
-            self.tempseq = []
-        else:
-            self.tempseq.append(line.rstrip())
-
-    def _save_translations(self):
-        result = []
-        dna = ''
-        name = ''
-        description = ''
-        try:
-            for (parse_id, description, protein) in self.frames:
-                (name, frame) = parse_id.rsplit('_', 1)
-                if dna == '':
-                    dna = self.indb[name]
-                seq = {
-                    'id': uuid.uuid4().hex,
-                    'dna': dna,
-                    'protein': protein,
-                    'name': name,
-                    'description': description,
-                    'frame': int(frame)
-                }
-        except KeyError:
-            print(self.frames)
-            print(self.indb)
-        return name
-
 #Reads FASTA file. Adds all six frames of fragments to database and a new FASTA file with new UUIDs as keys in both.
 def translate_fasta(inpath, outpath):
     outfile = open(outpath, 'w')
-    #outdb = berkeley.open_fragments('n')
-    outdb = {} #Just for profiling/testing: No db
     infile = open(inpath,'r')
-    #First step: Parse fasta file, save fragments to db and pipe to transeq process
-    print('Start', time.asctime(time.localtime()))
+    if _DEBUG:
+        outdb = {}
+        print('Start', time.asctime(time.localtime()))
+    else:
+        outdb = berkeley.open_fragments('n')
     try:
         n = 0
         tempseq = []
@@ -136,23 +78,35 @@ def translate_fasta(inpath, outpath):
                 tempseq = []
             else:
                 tempseq.append(line.rstrip())
+        #When the file is finished: Save the final sequence just like the others
         _save_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq), outdb, outfile)
     except OSError:
         raise PathError(''.join(['ERROR: cannot open', refseqpath]))
     finally:
         infile.close()
         outfile.close()
-        #outdb.close()
-        print('Finish:', time.asctime(time.localtime()))
+        if _DEBUG:
+            print('Finish:', time.asctime(time.localtime()))
+        else:
+            outdb.close()
 
+#Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
 def _save_sequence(name, desc, sequence, outdb, outfile):
-    #Reverse complement
-    revseq = ''.join([_COMPLEMENTS[c] for c in sequence[::-1]])
+    #Local variables = less overhead
+    gencode = _GENCODE
+    complements = _COMPLEMENTS
     for frame in range(0,6):
-        dna = revseq[frame-3::] if frame > 2 else sequence[frame::]
-        #translate dna codons to protein
-        protein = ''.join([_GENCODE[dna[i:i+3]] for i in xrange(0, len(dna), 3)])
-        #id = uuid.uuid4().hex
+        #First 3 frames are normal, following 3 are reverse complements
+        if frame > 2:
+            #Reverse and frame adjust
+            dna = sequence[-(frame-2)::-1]
+            #Complement
+            dna  = ''.join([complements[c] for c in dna])
+        else:
+            dna  = sequence[frame::]
+        #Translate dna codons to protein
+        protein = ''.join([gencode[dna[i:i+3]] for i in xrange(0, len(dna), 3)])
+        #Faster but less secure (wrt collissions) than stock uuid4
         id = uuid.UUID(int=random.getrandbits(128), version=4).hex
         seq = {
             'id': id,
@@ -160,13 +114,13 @@ def _save_sequence(name, desc, sequence, outdb, outfile):
             'protein': protein,
             'name': name,
             'description': desc,
-            'frame': frame
+            'frame': frame+1
         }
         outdb[id] = json.dumps(seq)
         out = ''.join(['>', id, '\n', protein, '\n'])
         outfile.write(out)
 
-import cProfile
-
-cProfile.run("translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')")
-#translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')
+if _DEBUG:
+    #import cProfile
+    #cProfile.run("translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')")
+    translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')
