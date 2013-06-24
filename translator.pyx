@@ -11,7 +11,7 @@ cdef extern from "stdlib.h":
   void free(void *ptr)
   int strcmp(char *a, char *b)
   char * strcpy(char *a, char *b)
-cdef int[89] _COMPLEMENTS
+cdef char[89] _COMPLEMENTS
 _COMPLEMENTS['A'] = 'T'
 _COMPLEMENTS['C'] = 'G'
 _COMPLEMENTS['G'] = 'C'
@@ -28,31 +28,32 @@ _COMPLEMENTS['D'] = 'H'
 _COMPLEMENTS['H'] = 'D'
 _COMPLEMENTS['N'] = 'N'
 _COMPLEMENTS['X'] = 'X'
-_GENCODE = defaultdict(lambda: 'X', {
-    'TTT': 'F','TTC': 'F','TTY': 'F',
-    'TTA': 'L','TTG': 'L','TTR': 'L',
-    'CTT': 'L','CTC': 'L','CTA': 'L','CTG': 'L','CTM': 'L','CTR': 'L','CTW': 'L','CTS': 'L','CTY': 'L','CTK': 'L','CTV': 'L','CTH': 'L','CTD': 'L','CTB': 'L','CTX': 'L','CTN': 'L',
-    'ATT': 'I','ATC': 'I','ATA': 'I','ATY': 'I','ATW': 'I','ATM': 'I','ATH': 'I', 'ATG': 'M',
-    'GTT': 'V','GTC': 'V','GTA': 'V','GTG': 'V','GTM': 'V','GTR': 'V','GTW': 'V','GTS': 'V','GTY': 'V','GTK': 'V','GTV': 'V','GTH': 'V','GTD': 'V','GTB': 'V','GTX': 'V','GTN': 'V',
-    'TCT': 'S','TCC': 'S','TCA': 'S','TCG': 'S','TCM': 'S','TCR': 'S','TCW': 'S','TCS': 'S','TCY': 'S','TCK': 'S','TCV': 'S','TCH': 'S','TCD': 'S','TCB': 'S','TCX': 'S','TCN': 'S',
-    'CCT': 'P','CCC': 'P','CCA': 'P','CCG': 'P','CCM': 'P','CCR': 'P','CCW': 'P','CCS': 'P','CCY': 'P','CCK': 'P','CCV': 'P','CCH': 'P','CCD': 'P','CCB': 'P','CCX': 'P','CCN': 'P',
-    'ACT': 'T','ACC': 'T','ACA': 'T','ACG': 'T','ACM': 'T','ACR': 'T','ACW': 'T','ACS': 'T','ACY': 'T','ACK': 'T','ACV': 'T','ACH': 'T','ACD': 'T','ACB': 'T','ACX': 'T','ACN': 'T',
-    'GCT': 'A','GCC': 'A','GCA': 'A','GCG': 'A','GCM': 'A','GCR': 'A','GCW': 'A','GCS': 'A','GCY': 'A','GCK': 'A','GCV': 'A','GCH': 'A','GCD': 'A','GCB': 'A','GCX': 'A','GCN': 'A',
-    'TAT': 'Y','TAC': 'Y','TAY': 'Y',
-    'TAA': '*','TAG': '*','TAR': '*',
-    'CAT': 'H','CAC': 'H','CAY': 'H',
-    'CAA': 'Q','CAG': 'Q','CAR': 'Q',
-    'AAT': 'N','AAC': 'N','AAY': 'N',
-    'AAA': 'K','AAG': 'K','AAR': 'K',
-    'GAT': 'D','GAC': 'D','GAY': 'D',
-    'GAA': 'E','GAG': 'E','GAR': 'E',
-    'TGT': 'C','TGC': 'C','TGY': 'C', 'TGA': '*', 'TGG': 'W',
-    'CGT': 'R','CGC': 'R','CGA': 'R','CGG': 'R','CGM': 'R','CGR': 'R','CGW': 'R','CGS': 'R','CGY': 'R','CGK': 'R','CGV': 'R','CGH': 'R','CGD': 'R','CGB': 'R','CGX': 'R','CGN': 'R',
-    'AGT': 'S','AGC': 'S','AGY': 'S',
-    'AGA': 'R','AGG': 'R','AGR': 'R',
-    'GGT': 'G','GGC': 'G','GGA': 'G','GGG': 'G','GGM': 'G','GGR': 'G','GGW': 'G','GGS': 'G','GGY': 'G','GGK': 'G','GGV': 'G','GGH': 'G','GGD': 'G','GGB': 'G','GGX': 'G','GGN': 'G',
-    'CT': 'L', 'GT': 'V', 'TC': 'S', 'CC': 'P', 'AC': 'T', 'GC': 'A', 'CG': 'R', 'GG': 'G'
-})
+_GENCODE = {
+    'TTT': ord('F'),'TTC': ord('F'),'TTY': ord('F'),
+    'TTA': ord('L'),'TTG': ord('L'),'TTR': ord('L'),
+    'CTT': ord('L'),'CTC': ord('L'),'CTA': ord('L'),'CTG': ord('L'),'CTM': ord('L'),'CTR': ord('L'),'CTW': ord('L'),'CTS': ord('L'),'CTY': ord('L'),'CTK': ord('L'),'CTV': ord('L'),'CTH': ord('L'),'CTD': ord('L'),'CTB': ord('L'),'CTX': ord('L'),'CTN': ord('L'),
+    'ATT': ord('I'),'ATC': ord('I'),'ATA': ord('I'),'ATY': ord('I'),'ATW': ord('I'),'ATM': ord('I'),'ATH': ord('I'), 'ATG': ord('M'),
+    'GTT': ord('V'),'GTC': ord('V'),'GTA': ord('V'),'GTG': ord('V'),'GTM': ord('V'),'GTR': ord('V'),'GTW': ord('V'),'GTS': ord('V'),'GTY': ord('V'),'GTK': ord('V'),'GTV': ord('V'),'GTH': ord('V'),'GTD': ord('V'),'GTB': ord('V'),'GTX': ord('V'),'GTN': ord('V'),
+    'TCT': ord('S'),'TCC': ord('S'),'TCA': ord('S'),'TCG': ord('S'),'TCM': ord('S'),'TCR': ord('S'),'TCW': ord('S'),'TCS': ord('S'),'TCY': ord('S'),'TCK': ord('S'),'TCV': ord('S'),'TCH': ord('S'),'TCD': ord('S'),'TCB': ord('S'),'TCX': ord('S'),'TCN': ord('S'),
+    'CCT': ord('P'),'CCC': ord('P'),'CCA': ord('P'),'CCG': ord('P'),'CCM': ord('P'),'CCR': ord('P'),'CCW': ord('P'),'CCS': ord('P'),'CCY': ord('P'),'CCK': ord('P'),'CCV': ord('P'),'CCH': ord('P'),'CCD': ord('P'),'CCB': ord('P'),'CCX': ord('P'),'CCN': ord('P'),
+    'ACT': ord('T'),'ACC': ord('T'),'ACA': ord('T'),'ACG': ord('T'),'ACM': ord('T'),'ACR': ord('T'),'ACW': ord('T'),'ACS': ord('T'),'ACY': ord('T'),'ACK': ord('T'),'ACV': ord('T'),'ACH': ord('T'),'ACD': ord('T'),'ACB': ord('T'),'ACX': ord('T'),'ACN': ord('T'),
+    'GCT': ord('A'),'GCC': ord('A'),'GCA': ord('A'),'GCG': ord('A'),'GCM': ord('A'),'GCR': ord('A'),'GCW': ord('A'),'GCS': ord('A'),'GCY': ord('A'),'GCK': ord('A'),'GCV': ord('A'),'GCH': ord('A'),'GCD': ord('A'),'GCB': ord('A'),'GCX': ord('A'),'GCN': ord('A'),
+    'TAT': ord('Y'),'TAC': ord('Y'),'TAY': ord('Y'),
+    'TAA': ord('*'),'TAG': ord('*'),'TAR': ord('*'),
+    'CAT': ord('H'),'CAC': ord('H'),'CAY': ord('H'),
+    'CAA': ord('Q'),'CAG': ord('Q'),'CAR': ord('Q'),
+    'AAT': ord('N'),'AAC': ord('N'),'AAY': ord('N'),
+    'AAA': ord('K'),'AAG': ord('K'),'AAR': ord('K'),
+    'GAT': ord('D'),'GAC': ord('D'),'GAY': ord('D'),
+    'GAA': ord('E'),'GAG': ord('E'),'GAR': ord('E'),
+    'TGT': ord('C'),'TGC': ord('C'),'TGY': ord('C'), 'TGA': ord('*'), 'TGG': ord('W'),
+    'CGT': ord('R'),'CGC': ord('R'),'CGA': ord('R'),'CGG': ord('R'),'CGM': ord('R'),'CGR': ord('R'),'CGW': ord('R'),'CGS': ord('R'),'CGY': ord('R'),'CGK': ord('R'),'CGV': ord('R'),'CGH': ord('R'),'CGD': ord('R'),'CGB': ord('R'),'CGX': ord('R'),'CGN': ord('R'),
+    'AGT': ord('S'),'AGC': ord('S'),'AGY': ord('S'),
+    'AGA': ord('R'),'AGG': ord('R'),'AGR': ord('R'),
+    'GGT': ord('G'),'GGC': ord('G'),'GGA': ord('G'),'GGG': ord('G'),'GGM': ord('G'),'GGR': ord('G'),'GGW': ord('G'),'GGS': ord('G'),'GGY': ord('G'),'GGK': ord('G'),'GGV': ord('G'),'GGH': ord('G'),'GGD': ord('G'),'GGB': ord('G'),'GGX': ord('G'),'GGN': ord('G'),
+    'CT': ord('L'), 'GT': ord('V'), 'TC': ord('S'), 'CC': ord('P'), 'AC': ord('T'), 'GC': ord('A'), 'CG': ord('R'), 'GG': ord('G')
+
+}
 #Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
 def translate_sequence(char *name, char *desc, char *sequence):
     cdef int i, j, frame, l
@@ -62,6 +63,7 @@ def translate_sequence(char *name, char *desc, char *sequence):
     cdef char* s = NULL
     l = len(sequence)
     cdef char* dseq = <char *>calloc(l + 1, sizeof(char))
+    cdef char* pseq = <char *>calloc(l/3 + 2, sizeof(char))
     #Local variables = less overhead
     result = []
     gencode = _GENCODE
@@ -76,20 +78,40 @@ def translate_sequence(char *name, char *desc, char *sequence):
                 #Complement
                     dseq[j] = _COMPLEMENTS[c]
                     j += 1
-            #dseq[j] = 'Z'
+            dseq[j] = 0
             #jd = ''.join(dseq)
-            dna  = dseq
             #print('REV')
         else:
-            #print('NOREV')
-            dd  = sequence[frame::]
-            dna = dd
+            #Performance gain no biggie here
+            j = 0
+            for i in range(frame, l):
+                c = sequence[i]
+                if c != 10:
+                    dseq[j] = c
+                    j += 1
+            dseq[j] = 0
+        dna  = dseq
         #Translate dna codons to protein
-        pseq = []
-        for i in range(0, len(dna), 3):
-            pseq.append(gencode[dna[i:i+3]])
-        d = ''.join(pseq)
-        protein = d
+        #pseq = []
+        #TODO: Optimize this too
+        #for i in range(0, len(dna), 3):
+        #    pseq.append(gencode[dna[i:i+3]])
+        #d = ''.join(pseq)
+        #protein = d
+        j = 0
+        l = len(dna)
+        for i in range(0, l-1, 3):
+            if i == l-2:
+                nuc = dna[i:i+2]
+            else:
+                nuc = dna[i:i+3]
+            try:
+                c = gencode[nuc]
+                pseq[j] = c
+            except KeyError:
+                pseq[j] = 'X'
+            j += 1
+        protein = pseq
         #protein = ''.join([gencode[dna[i:i+3]] for i in xrange(0, len(dna), 3)])
         #Faster but less secure (wrt collissions) than stock uuid4
         id = uuid.UUID(int=random.getrandbits(128), version=4).hex
@@ -106,7 +128,6 @@ def translate_sequence(char *name, char *desc, char *sequence):
             #result.append((id, json.dumps(seq), out))
             result.append((id, json.dumps(seq), out))
         except:
-            print("* dd: ",dd)
             print("* dna: ", dna)
             print(seq)
             exit(1)
