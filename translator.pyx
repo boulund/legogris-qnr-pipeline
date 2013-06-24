@@ -302,6 +302,12 @@ GT['X']['H'] = <char *>calloc(90, sizeof(char))
 GT['X']['N'] = <char *>calloc(90, sizeof(char))
 GT['X']['X'] = <char *>calloc(90, sizeof(char))
 
+for a in 'AGCTRYSWKMBVDHNX':
+    for b in 'AGCTRYSWKMBVDHNX':
+        for c in 'AGCTRYSWKMBVDHNX':
+            GT[<char>ord(a)][<char>ord(b)][<char>ord(c)] = ord('X')
+
+
 GT['T']['T']['T'] = 'F'
 GT['T']['T']['C'] = 'F'
 GT['T']['T']['Y'] = 'F'
@@ -448,7 +454,6 @@ GT['A']['A']['R'] = 'K'
 GT['G']['A']['T'] = 'D'
 GT['G']['A']['C'] = 'D'
 GT['G']['A']['Y'] = 'D'
-
 GT['G']['A']['A'] = 'E'
 GT['G']['A']['G'] = 'E'
 GT['G']['A']['R'] = 'E'
@@ -501,17 +506,19 @@ GT['G']['G']['B'] = 'G'
 GT['G']['G']['X'] = 'G'
 GT['G']['G']['N'] = 'G'
 
-GT['C']['T'] = 'L'
-GT['G']['T'] = 'V'
-GT['T']['C'] = 'S'
-GT['C']['C'] = 'P'
-GT['A']['C'] = 'T'
-GT['G']['C'] = 'A'
-GT['C']['G'] = 'R'
-GT['G']['G'] = 'G'
+#GT['C']['T'] = 'L'
+#GT['G']['T'] = 'V'
+#GT['T']['C'] = 'S'
+#GT['C']['C'] = 'P'
+#GT['A']['C'] = 'T'
+#GT['G']['C'] = 'A'
+#GT['C']['G'] = 'R'
+#GT['G']['G'] = 'G'
 
 #Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
 def translate_sequence(char *name, char *desc, char *sequence):
+    global GT
+    cdef char x = ord('X')
     cdef int i, j, frame, l
     cdef char *dna
     cdef char *protein
@@ -556,11 +563,12 @@ def translate_sequence(char *name, char *desc, char *sequence):
         j = 0
         l = len(dna)
         for i in range(0, l-1, 3):
-            if i == l-2:
-                nuc = dna[i:i+2]+'X'
-            else:
-                nuc = dna[i:i+3]
-            c = GT['A']['G']['R']
+            #if i == l-2:
+            #    nuc = dna[i:i+2]+'X'
+            #else:
+            #    nuc = dna[i:i+3]
+            c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != l-2 else x ]
+            #print(chr(dna[i]), chr(dna[i+1]), chr(dna[i+2]), c)
             pseq[j] = c
             j += 1
         protein = pseq
