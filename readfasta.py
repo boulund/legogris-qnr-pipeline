@@ -8,6 +8,7 @@ import uuid
 import json
 import subprocess, shlex
 import re
+import random
 from collections import defaultdict
 
 import berkeley
@@ -148,13 +149,11 @@ def _save_sequence(name, desc, sequence, outdb, outfile):
     #Reverse complement
     revseq = ''.join([_COMPLEMENTS[c] for c in sequence[::-1]])
     for frame in range(0,6):
-        if frame > 2:
-            dna = revseq[frame-3::]
-        else:
-            dna = sequence[frame::]
+        dna = revseq[frame-3::] if frame > 2 else sequence[frame::]
         #translate dna codons to protein
         protein = ''.join([_GENCODE[dna[i:i+3]] for i in xrange(0, len(dna), 3)])
-        id = uuid.uuid4().hex
+        #id = uuid.uuid4().hex
+        id = uuid.UUID(int=random.getrandbits(128), version=4).hex
         seq = {
             'id': id,
             'dna': dna,
