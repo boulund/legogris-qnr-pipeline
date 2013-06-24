@@ -11,24 +11,23 @@ cdef extern from "stdlib.h":
   void free(void *ptr)
   int strcmp(char *a, char *b)
   char * strcpy(char *a, char *b)
-_COMPLEMENTS = {
-    ord('A'): ord('T'),
-    ord('C'): ord('G'),
-    ord('G'): ord('C'),
-    ord('T'): ord('A'),
-    ord('Y'): ord('R'),
-    ord('R'): ord('Y'),
-    ord('S'): ord('S'),
-    ord('W'): ord('W'),
-    ord('K'): ord('M'),
-    ord('M'): ord('K'),
-    ord('B'): ord('V'),
-    ord('V'): ord('B'),
-    ord('D'): ord('H'),
-    ord('H'): ord('D'),
-    ord('N'): ord('N'),
-    ord('X'): ord('X'),
-}
+cdef int[89] _COMPLEMENTS
+_COMPLEMENTS['A'] = 'T'
+_COMPLEMENTS['C'] = 'G'
+_COMPLEMENTS['G'] = 'C'
+_COMPLEMENTS['T'] = 'A'
+_COMPLEMENTS['Y'] = 'R'
+_COMPLEMENTS['R'] = 'Y'
+_COMPLEMENTS['S'] = 'S'
+_COMPLEMENTS['W'] = 'W'
+_COMPLEMENTS['K'] = 'M'
+_COMPLEMENTS['M'] = 'K'
+_COMPLEMENTS['B'] = 'V'
+_COMPLEMENTS['V'] = 'B'
+_COMPLEMENTS['D'] = 'H'
+_COMPLEMENTS['H'] = 'D'
+_COMPLEMENTS['N'] = 'N'
+_COMPLEMENTS['X'] = 'X'
 _GENCODE = defaultdict(lambda: 'X', {
     'TTT': 'F','TTC': 'F','TTY': 'F',
     'TTA': 'L','TTG': 'L','TTR': 'L',
@@ -66,7 +65,6 @@ def translate_sequence(char *name, char *desc, char *sequence):
     #Local variables = less overhead
     result = []
     gencode = _GENCODE
-    complements = _COMPLEMENTS
     for frame in range(0,6):
         #First 3 frames are normal, following 3 are reverse complements
         if frame > 2:
@@ -76,7 +74,7 @@ def translate_sequence(char *name, char *desc, char *sequence):
                 c = sequence[i]
                 if c != 10: #skip newline
                 #Complement
-                    dseq[i] = complements[c]
+                    dseq[i] = _COMPLEMENTS[c]
                     j += 1
             #dseq[j] = 'Z'
             #jd = ''.join(dseq)
@@ -105,6 +103,7 @@ def translate_sequence(char *name, char *desc, char *sequence):
         }
         out = ''.join(['>', id, '\n', protein, '\n'])
         try:
+            #result.append((id, json.dumps(seq), out))
             result.append((id, json.dumps(seq), out))
         except:
             print("* dd: ",dd)
