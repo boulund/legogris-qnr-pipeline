@@ -541,8 +541,6 @@ def translate_sequence(char *name, char *desc, char *sequence):
                     dseq[j] = _COMPLEMENTS[c]
                     j += 1
             dseq[j] = 0
-            #jd = ''.join(dseq)
-            #print('REV')
         else:
             #Performance gain no biggie here
             j = 0
