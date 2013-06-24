@@ -12,9 +12,9 @@ _ITEM_LIMIT = 0
 def translate_fasta(inpath, outpath):
     outfile = open(outpath, 'w')
     infile = open(inpath,'r')
-    #outdb = berkeley.open_fragments('n')
+    outdb = berkeley.open_fragments('n')
     if _DEBUG:
-        outdb = {}
+        #outdb = {}
         print('Start', time.asctime(time.localtime()))
     try:
         n = 0
@@ -43,11 +43,10 @@ def translate_fasta(inpath, outpath):
         outfile.close()
         if _DEBUG:
             print('Finish:', time.asctime(time.localtime()))
-        else:
-            outdb.close()
+        outdb.close()
 
 
 if _DEBUG:
     import cProfile
-    cProfile.run("translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')")
-    #translate_fasta('tutorial/database/ntsubset_plus_7_qnr.nfa', 'test.pfa')
+    #cProfile.run("translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')")
+    translate_fasta('tutorial/database/ntsubset_plus_7_qnr.nfa', 'test.pfa')
