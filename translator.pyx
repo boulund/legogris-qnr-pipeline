@@ -70,11 +70,11 @@ def translate_sequence(char *name, char *desc, char *sequence):
         if frame > 2:
             #Reverse and frame adjust
             j = 0
-            for i in range(l-1, frame-4, -1):
+            for i in range(l+2-frame, -1, -1):
                 c = sequence[i]
                 if c != 10: #skip newline
                 #Complement
-                    dseq[i] = _COMPLEMENTS[c]
+                    dseq[j] = _COMPLEMENTS[c]
                     j += 1
             #dseq[j] = 'Z'
             #jd = ''.join(dseq)

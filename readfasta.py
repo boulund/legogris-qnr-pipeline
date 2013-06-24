@@ -6,7 +6,7 @@ import berkeley
 from translator import translate_sequence
 
 _DEBUG = True
-_ITEM_LIMIT = 0
+_ITEM_LIMIT = 2
 
 #Reads FASTA file. Adds all six frames of fragments to database and a new FASTA file with new UUIDs as keys in both.
 def translate_fasta(inpath, outpath):
