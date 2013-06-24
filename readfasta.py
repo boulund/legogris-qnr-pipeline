@@ -150,7 +150,8 @@ def _save_sequence(name, desc, sequence, outdb, outfile):
     for frame in range(0,6):
         if frame > 2:
             dna = revseq[frame-3::]
-        dna = sequence[frame::]
+        else:
+            dna = sequence[frame::]
         #translate dna codons to protein
         protein = ''.join([_GENCODE[dna[i:i+3]] for i in xrange(0, len(dna), 3)])
         id = uuid.uuid4().hex
