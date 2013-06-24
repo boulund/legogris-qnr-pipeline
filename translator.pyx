@@ -519,7 +519,7 @@ GT['G']['G']['N'] = 'G'
 def translate_sequence(char *name, char *desc, char *sequence):
     global GT
     cdef char x = ord('X')
-    cdef int i, j, frame, l
+    cdef int i, j, frame, k, l
     cdef char *dna
     cdef char *protein
     cdef char c
@@ -552,25 +552,14 @@ def translate_sequence(char *name, char *desc, char *sequence):
             dseq[j] = 0
         dna  = dseq
         #Translate dna codons to protein
-        #pseq = []
-        #TODO: Optimize this too
-        #for i in range(0, len(dna), 3):
-        #    pseq.append(gencode[dna[i:i+3]])
-        #d = ''.join(pseq)
-        #protein = d
         j = 0
-        l = len(dna)
-        for i in range(0, l-1, 3):
-            #if i == l-2:
-            #    nuc = dna[i:i+2]+'X'
-            #else:
-            #    nuc = dna[i:i+3]
-            c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != l-2 else x ]
+        k = len(dna)
+        for i in range(0, k-1, 3):
+            c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != k-2 else x ]
             #print(chr(dna[i]), chr(dna[i+1]), chr(dna[i+2]), c)
             pseq[j] = c
             j += 1
         protein = pseq
-        #protein = ''.join([gencode[dna[i:i+3]] for i in xrange(0, len(dna), 3)])
         #Faster but less secure (wrt collissions) than stock uuid4
         id = uuid.UUID(int=random.getrandbits(128), version=4).hex
         seq = {
