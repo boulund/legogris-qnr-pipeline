@@ -9,7 +9,7 @@ from collections import defaultdict
 import berkeley
 
 _DEBUG = True
-_ITEM_LIMIT = 0
+_ITEM_LIMIT = 10
 _COMPLEMENTS = {
     'A': 'T',
     'C': 'G',
@@ -62,8 +62,7 @@ def translate_fasta(inpath, outpath):
     if _DEBUG:
         outdb = {}
         print('Start', time.asctime(time.localtime()))
-    else:
-        outdb = berkeley.open_fragments('n')
+    outdb = berkeley.open_fragments('n')
     try:
         n = 0
         tempseq = []
@@ -73,13 +72,17 @@ def translate_fasta(inpath, outpath):
                 if _ITEM_LIMIT and n > _ITEM_LIMIT:
                     break
                 if len(tempseq) > 0:
-                    _save_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq), outdb, outfile)
+                    for (id, dump, out) in _save_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq)):
+                        outdb[id] = dump
+                        outfile.write(out)
                 (seqid, seqdesc) = line[1::].split(' ', 1)
                 tempseq = []
             else:
                 tempseq.append(line.rstrip())
         #When the file is finished: Save the final sequence just like the others
-        _save_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq), outdb, outfile)
+        for (id, dump, out) in _save_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq)):
+            outdb[id] = dump
+            outfile.write(out)
     except OSError:
         raise PathError(''.join(['ERROR: cannot open', refseqpath]))
     finally:
@@ -87,12 +90,12 @@ def translate_fasta(inpath, outpath):
         outfile.close()
         if _DEBUG:
             print('Finish:', time.asctime(time.localtime()))
-        else:
-            outdb.close()
+        outdb.close()
 
 #Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
-def _save_sequence(name, desc, sequence, outdb, outfile):
+def _save_sequence(name, desc, sequence):
     #Local variables = less overhead
+    result = []
     gencode = _GENCODE
     complements = _COMPLEMENTS
     for frame in range(0,6):
@@ -116,11 +119,11 @@ def _save_sequence(name, desc, sequence, outdb, outfile):
             'description': desc,
             'frame': frame+1
         }
-        outdb[id] = json.dumps(seq)
         out = ''.join(['>', id, '\n', protein, '\n'])
-        outfile.write(out)
+        result.append((id, json.dumps(seq), out))
+    return result
 
 if _DEBUG:
     #import cProfile
     #cProfile.run("translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')")
-    translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')
+    translate_fasta('tutorial/database/ntsubset_plus_7_qnr.nfa', 'test.pfa')
