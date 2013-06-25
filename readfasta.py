@@ -26,7 +26,7 @@ def translate_fasta(inpath, outpath):
                     break
                 if len(tempseq) > 0:
                     for (id, dump, out) in translate_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq)):
-                        outdb[id] = dump
+                        outdb.db.put(id, dump)
                         outfile.write(out)
                 (seqid, seqdesc) = line[1::].split(' ', 1)
                 tempseq = []
@@ -34,7 +34,7 @@ def translate_fasta(inpath, outpath):
                 tempseq.append(line.rstrip())
         #When the file is finished: Save the final sequence just like the others
         for (id, dump, out) in translate_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq)):
-            outdb[id] = dump
+            outdb.db.put(id, dump)
             outfile.write(out)
     except OSError:
         raise PathError(''.join(['ERROR: cannot open', refseqpath]))
@@ -48,5 +48,7 @@ def translate_fasta(inpath, outpath):
 
 if _DEBUG:
     import cProfile
-    #cProfile.run("translate_fasta('tutorial/database/ntsmall_plus_qnr.nfa', 'test.pfa')")
-    translate_fasta('tutorial/database/ntsubset_plus_7_qnr.nfa', 'test.pfa')
+    inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
+    #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
+    cProfile.run("translate_fasta('"+inpath+"', 'test.pfa')")
+    #translate_fasta(inpath, 'test.pfa')
