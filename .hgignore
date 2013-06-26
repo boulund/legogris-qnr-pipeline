@@ -3,3 +3,10 @@ tutorial
 search
 .*\.pyc
 .*\.db
+.*\.so
+.*\.o
+.*\.c
+.*\.pfa
+.*\.nfa
+build
+
