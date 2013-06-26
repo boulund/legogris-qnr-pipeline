@@ -1,60 +1,54 @@
 #!/bin/python
 from __future__ import print_function
 from bsddb import db
-import readfasta
 import time
 
-_DEBUG = True
+class Sieve(object):
+    def __init__(self, params, logfile):
+        self.logfile = logfile
+        self.init(params)
+        for param in self.param_names:
+            if isinstance(param, str):
+                if not param in params:
+                    raise Exception('Missing mandatory parameter %s for sieve %s' % (param, self.name))
+                param_name = param
+            else:
+                param_name = param[0]
+                default_value = param[1]
+            if param_name in params:
+                setattr(self, param_name, params[param_name])
+            else:
+                setattr(self, param_name, default_value)
 
-def run_sieve(sieve, paths):
+def run_sieve(sieve, paths, logfile):
     (indbpath, infilepath, outdbpath, outfilepath) = paths
-    indb = infile = outdb = outfile = None
+    indb = outdb = None
     try:
-        if indbpath:
+        if hasattr(sieve, 'indbmode'):
             indb = db.DB()
             if sieve.indbflags:
                 indb.set_flags(sieve.indbflags)
             indb.open(indbpath, sieve.indbmode, db.DB_RDONLY) #RDONLY only a guess!
-        if infilepath:
-            infile = open(infilepath,'r')
-        if outdbpath:
+        if hasattr(sieve, 'outdbmode'):
             outdb = db.DB()
             if sieve.outdbflags:
                 outdb.set_flags(sieve.outdbflags)
             outdb.open(outdbpath, sieve.outdbmode, db.DB_CREATE)
-        if outfilepath:
-            outfile = open(outfilepath, 'w')
-        if _DEBUG:
-            print('Start', sieve.name, time.asctime(time.localtime()))
-        return sieve.run(indb, infile, outdb, outfile)
-    except OSError:
-        raise PathError(''.join(['ERROR: cannot open', refseqpath]))
+        logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
+        return sieve.run(indb, infilepath, outdb, outfilepath)
     finally:
         if indb:
             indb.close()
-        if infile:
-            infile.close()
         if outdb:
             outdb.close()
-        if outfile:
-            outfile.close()
-        if _DEBUG:
-            print('Finish:', sieve.name, time.asctime(time.localtime()))
+        logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
 
-def run_sieves(sieves, dbs, files):
+def run_sieves(sieves, dbs, files, logfile):
     for i in xrange(0, len(sieves)):
         if isinstance(sieves[i], tuple):
-            (sieve, params) = sieves[i]
-            inpath = run_sieve(sieve.Sieve(params), (dbs[i], files[i], dbs[i+1], files[i+1]))
+            (s, params) = sieves[i]
+            sieve = s.create(params, logfile)
+            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile)
         elif isinstance(sieves[i], list):
             for s in sieves[i]:
-                return run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::])
-
-if _DEBUG:
-    inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
-    #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
-    run_sieves(
-        [(readfasta, {})],     #sieves
-        ['', 'fragments.db'],   #dbs
-        [inpath, 'test.pfa'],   #files
-    )
+                return run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile)

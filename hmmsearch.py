@@ -1,87 +1,63 @@
+from __future__ import print_function
 from os import path, makedirs, system
 import shlex
 import subprocess
 from datetime import date
 import time
+from bsddb import db
+from sieve import Sieve
 
-class HMMSearch:
-    def __init__(self, logfile):
-        self.logfile = logfile
-    def search(
-            self,
-            model,# Path to MODEL
-            hmmsearch_outdir,# Path to output directory
-            numcpu,# CPU flag; "--cpu 4" means four CPUs, empty one core
-            wrap_long_lines,
-            use_heuristics,
-            databases
-        ):
+def create(params, logfile):
+    return HMMSearch(params, logfile)
+
+class HMMSearch(Sieve):
+    def init(self, params):
+        self.outdbflags = None
+        self.outdbmode = db.DB_HASH
+        self.name = 'HMMer search'
+        self.param_names = [
+            'model_path',
+            ('numcpu', 1),
+            # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
+            # There is little reason not to use heuristics, HMMer has a higher propensity
+            # for crashing if not used and it only increases the number of really low
+            ('use_heuristics', True)
+        ]
+
+    def run(self, indb, infilepath, outdb, outfilepath):
         logfile = self.logfile
-        cpuflag = ''.join(["--cpu ",str(numcpu)])
-        # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
-        # There is little reason not to use heuristics, HMMer has a higher propensity
-        # for crashing if not used and it only increases the number of really low
-        heurflag = '--max' if use_heuristics else ''
-        # Text wrap long lines; "--notextw" means true, empty false
-        # THIS MUST BE ENABLED TO ENSURE CORRECT BEHAVIOR!
-        textwflag = '' if wrap_long_lines else '--notextw'
 
-        args = []
+        heurflag = '--max' if self.use_heuristics else ''
+        hmmsearch_outdir = ''
 
-        # Retrieve current date, used in output filename to unique:ify the output filenames
-        d = date.today()
         t = time.asctime(time.localtime())
 
-        ## HMMsearch with the settings defined above
-        # Print a log of the hmmsearch run settings
         logfile.write("Running hmmsearch at:"+t+"\n")
-        #logfile.write("Model used                       : "+path.basename(model)+"\n")
-        #logfile.write("Output directory                 : "+hmmsearch_outdir+"\n")
-        #logfile.write("CPU-flag (no flag means one cpu) : "+cpuflag+"\n")
-        #logfile.write("Text Wrap (empty means textwrap) : "+textwflag+"\n")
-        #logfile.write("Sensitivity (empty means default): "+heurflag+"\n")
-        #logfile.write("\nThe following input file(s) were entered at command line:\n"+'\n'.join(databases)+"\n")
-        #print "Model used                       :", path.basename(model)
-        #print "Output directory                 :", hmmsearch_outdir
-        #print "CPU-flag (no flag means one cpu) :", cpuflag
-        #print "Text Wrap (empty means textwrap) :", textwflag
-        #print "Sensitivity (empty means default):", heurflag
-        #print "\nThe following input file(s) were entered at command line:\n", '\n'.join(databases)
+        logfile.debug("Model used                       : "+path.basename(self.model_path)+"\n")
+        logfile.debug("Output directory                 : "+hmmsearch_outdir+"\n")
+        logfile.debug("Sensitivity (empty means default): "+heurflag+"\n")
 
-        for database in databases:
-            # Retrieve the filename and path of the database
-            outfilename = path.basename(database)
-            database = path.abspath(database)
-
-            # Put together the entire string to call hmmsearch
-            call_list = ''.join(["hmmsearch ", cpuflag, " ", textwflag, " ", heurflag, " ",
-                                "-o ", hmmsearch_outdir, outfilename,
-                                ''.join([".hmmsearched--", d.isoformat(), " "]),
-                                model, " ", database])
-            hmmsearch = shlex.split(call_list)
-            # Run hmmsearch
-            try:
-                output = subprocess.Popen(hmmsearch, stdin=subprocess.PIPE,
-                                            stderr=subprocess.PIPE).communicate()
-                if "Error: Failed to open hmm file" in output[1]:
-                    logfile.write("CATASTROPHIC: Could not open HMM: "+model+"\n")
-                    logfile.write("Make sure 'model.hmm' is available in current directory or\n")
-                    logfile.write("supply the -m argument with path to your HMM file\n")
-                    exit(1)
-                if use_heuristics:
-                    args.append(hmmsearch[6]) # 5 contains the output file path, used later
-                else:
-                    args.append(hmmsearch[5]) # 5 contains the output file path, used later
-                logfile.write("Finished hmmsearch on file "+database+"\n")
-            except OSError:
-                logfile.write("Could not open: "+database+"\n")
-            logfile.flush()
+        # Put together the entire string to call hmmsearch
+        call_list = 'hmmsearch --cpu %d --notextw %s -o %s %s %s' % (self.numcpu, heurflag, outfilepath, self.model_path, infilepath)
+        hmmsearch = shlex.split(call_list)
+        # Run hmmsearch
+        try:
+            output = subprocess.Popen(hmmsearch, stdin=subprocess.PIPE,
+                                        stderr=subprocess.PIPE).communicate()
+            if "Error: Failed to open hmm file" in output[1] or 'Error: File existence/permissions problem in trying to open HMM file' in output[1]:
+                logfile.write("CATASTROPHIC: Could not open HMM: "+self.model_path+"\n")
+                exit(1)
+            logfile.write("Finished hmmsearch on file "+infilepath+"\n")
+        except OSError, e:
+            logfile.write("Could not open one of hmmsearch or "+infilepath+"\n")
+            raise e
+        logfile.flush()
 
         # Output some more details for the log
         t = time.asctime(time.localtime())
         logfile.write("Finished hmmsearching the databases at: "+t+"\n")
         logfile.line()
         logfile.flush()
-        return args
+
 if __name__ == 'main':
     pass

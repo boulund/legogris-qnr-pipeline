@@ -1,4 +1,5 @@
 import time
+import sys
 
 _logfileseparator = "----------------------------------------------------------------------\n"
 
@@ -20,8 +21,12 @@ class Logger:
             print "Messages will be printed to STDOUT exclusively"
 
     def write(self, message):
-        print message
+        sys.stdout.write(message)
         self.logfile.write(message)
+
+    def writeline(self, message):
+        print message
+        self.logfile.write(message + '\n')
 
     def debug(self, message):
         if self._debug:
@@ -32,3 +37,6 @@ class Logger:
 
     def line(self):
         self.write(_logfileseparator)
+
+    def close(self):
+        self.logfile.close()
