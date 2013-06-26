@@ -1,0 +1,64 @@
+Start Tue Jun 25 16:55:15 2013
+Finish: Tue Jun 25 18:06:07 2013
+         301831742 function calls (272312246 primitive calls) in 4423.093 CPU seconds
+
+   Ordered by: standard name
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000 4423.093 4423.093 <string>:1(<module>)
+  2459958    4.810    0.000  146.339    0.000 __init__.py:184(dumps)
+        1    0.000    0.000    0.000    0.000 __init__.py:194(__init__)
+        1    0.000    0.000    0.000    0.000 __init__.py:218(__del__)
+        2    0.000    0.000    0.000    0.000 __init__.py:232(_closeCursors)
+        2    0.012    0.006  171.038   85.519 __init__.py:287(close)
+        1    0.000    0.000    0.247    0.247 __init__.py:350(hashopen)
+        1    0.000    0.000    0.001    0.001 __init__.py:403(_openDBEnv)
+        1    0.000    0.000    0.193    0.193 __init__.py:414(_checkflag)
+        1    0.000    0.000    0.247    0.247 berkeley.py:18(open_fragments)
+        1    0.000    0.000    0.247    0.247 berkeley.py:27(open)
+        1    0.000    0.000  171.025  171.025 dbutils.py:47(DeadlockWrap)
+ 63958908   37.075    0.000   84.792    0.000 encoder.py:213(_iterencode_dict)
+93478404/63958908   44.923    0.000  113.018    0.000 encoder.py:284(_iterencode)
+  2459958   20.867    0.000  141.529    0.000 encoder.py:346(encode)
+  2459958    1.762    0.000    1.762    0.000 encoder.py:370(iterencode)
+        1    0.000    0.000    0.000    0.000 genericpath.py:26(isfile)
+        1   19.010   19.010 4423.093 4423.093 readfasta.py:12(translate_fasta)
+        1    0.000    0.000    0.000    0.000 stat.py:24(S_IFMT)
+        1    0.000    0.000    0.000    0.000 stat.py:49(S_ISREG)
+  2459958    9.971    0.000   11.241    0.000 uuid.py:101(__init__)
+  2459958    3.721    0.000    3.721    0.000 uuid.py:265(get_hex)
+        1    0.000    0.000    0.000    0.000 {_bsddb.DBEnv}
+        1    0.000    0.000    0.000    0.000 {_bsddb.DB}
+ 27059538   17.624    0.000   17.624    0.000 {_json.encode_basestring_ascii}
+  2459958    0.393    0.000    0.393    0.000 {id}
+ 59038992   14.324    0.000   14.324    0.000 {isinstance}
+   409993    0.137    0.000    0.137    0.000 {len}
+  9592121    1.092    0.000    1.092    0.000 {method 'append' of 'list' objects}
+        1  171.025  171.025  171.025  171.025 {method 'close' of 'DB' objects}
+        2    1.228    0.614    1.228    0.614 {method 'close' of 'file' objects}
+  2459958    1.271    0.000    1.271    0.000 {method 'count' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {method 'get' of 'dict' objects}
+  2459958    0.597    0.000    0.597    0.000 {method 'iteritems' of 'dict' objects}
+  2869951    4.501    0.000    4.501    0.000 {method 'join' of 'str' objects}
+   409993    0.065    0.000    0.065    0.000 {method 'lstrip' of 'str' objects}
+        1    0.054    0.054    0.054    0.054 {method 'open' of 'DB' objects}
+        1    0.001    0.001    0.001    0.001 {method 'open' of 'DBEnv' objects}
+  2459958 4012.799    0.002 4012.799    0.002 {method 'put' of 'DB' objects}
+  9592121    1.358    0.000    1.358    0.000 {method 'rstrip' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {method 'set_flags' of 'DB' objects}
+        1    0.000    0.000    0.000    0.000 {method 'set_get_returns_none' of 'DB' objects}
+        1    0.000    0.000    0.000    0.000 {method 'set_lk_detect' of 'DBEnv' objects}
+   409993    0.569    0.000    0.569    0.000 {method 'split' of 'str' objects}
+ 10002114    2.128    0.000    2.128    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
+  2459958   20.776    0.000   20.776    0.000 {method 'write' of 'file' objects}
+        2    0.032    0.016    0.032    0.016 {open}
+        1    0.000    0.000    0.000    0.000 {posix.stat}
+        1    0.192    0.192    0.192    0.192 {posix.unlink}
+        2    0.000    0.000    0.000    0.000 {print}
+        2    0.000    0.000    0.000    0.000 {time.asctime}
+        2    0.000    0.000    0.000    0.000 {time.localtime}
+   409993   30.775    0.000  192.077    0.000 {translator.translate_sequence}
+./readfasta.py  254.16s user 35.98s system 6% cpu 1:13:43.60 total
+

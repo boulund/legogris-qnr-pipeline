@@ -48,7 +48,7 @@ def translate_fasta(inpath, outpath):
 
 if _DEBUG:
     import cProfile
-    inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
-    #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
+    #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
+    inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
     cProfile.run("translate_fasta('"+inpath+"', 'test.pfa')")
     #translate_fasta(inpath, 'test.pfa')
