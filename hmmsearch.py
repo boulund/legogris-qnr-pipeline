@@ -43,7 +43,6 @@ class HMMSearch(Sieve):
         self.hmmsearch(infilepath, outfilepath)
 
         parser = Parser(self.logfile, classificationfunction)
-        #db = berkeley.open_fragments('rw') originally, in and out is the same in parser!
         result = parser.parse_file(indb, outfilepath, self.minscore, self.classifyC, self.classifyD)
         for sequence in result:
             doc = json.dumps(sequence)

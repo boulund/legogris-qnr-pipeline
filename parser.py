@@ -14,50 +14,6 @@ class Parser:
         self.classificationfunction = classificationfunction
         self.logfile = logfile
 
-
-    def parse_files(self, files, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright):
-        logfile = self.logfile
-        t = time.asctime(time.localtime())
-        logfile.write("Starting to extract and classify hits from hmmsearch output at: "+t+"\n")
-
-        # Check that all paths given are valid and that files exists in those locations
-        infilepaths = []
-        for filepath in files:
-            if path.isfile(path.abspath(filepath)):
-                infilepaths.append(path.abspath(filepath))
-            else:
-                logfile.write(" ERROR: incorrect path for hmmsearch output file: "+filepath+"\n")
-
-        # Open file for writing the retrieved sequences to semi-temporary file
-        try:
-            retrseqfile = open(outfile,'w')
-        except OSError:
-            logfile.write(" ERROR: Could not open file for writing: "+RETR_SEQ_FILEPATH+"\n")
-
-
-        numerrors = 0
-        scores_ids = []
-        db = berkeley.open_fragments_passed('n')
-        try:
-            for infilepath in infilepaths:
-                sequences = self.parse_file(infilepath, outfile, minscore, retrdb, classifyC, classifyD, extendleft, extendright)
-                for sequence in sequences:
-                    doc = json.dumps(sequence)
-                    db.db.append(doc)
-                logfile.flush()
-        finally:
-            print "closing db"
-            db.db.close()
-
-        if numerrors >= len(infilepaths):
-            logfile.write("CATASTROPHIC: No input files contains any potential hits!?\n")
-            exit(1)
-
-        t = time.asctime(time.localtime())
-        logfile.write("Finished parsing hmmsearch output files and classifying hits at: "+t+"\n")
-        logfile.line()
-        logfile.flush()
-
     #Reinserts sequences with hmm score and dscore in indb
     def parse_file(self, indb, infilepath, minscore, classifyC, classifyD):
         logfile = self.logfile
