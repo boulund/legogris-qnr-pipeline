@@ -46,10 +46,7 @@ class Parser:
             if errmessages:
                 for message in errmessages:
                     logfile.write(message)
-            logfile.write("Retrieved "+str(len(sequences))+" full length sequences from database\n")
-            # Write the identified sequences (fragments/domains) to disk,
-            # they have been classified inside the previous function and
-            # non-qnr like sequences have been removed.
+            logfile.writeline("%d / %d sequences passed the classification function." % (len(sequences), len(score_id_tuples)))
             return sequences
 
         except IOError:
@@ -120,7 +117,6 @@ def _parse_hmmsearch_output(filename,MIN_SCORE=0):
         foundpath = re.match(dbpattern,line)
         if foundpath is not(None):
             dbpath = path.abspath(foundpath.group(1))
-            #print dbpath #Troubleshooting
 
 
         # Match to find the sequence score, maximum domain score and sequence ID
@@ -130,11 +126,10 @@ def _parse_hmmsearch_output(filename,MIN_SCORE=0):
         # If the DOMAIN score is higher than or equal MIN_SCORE count it as a
         # preliminary hit and store the sequence ID and scores.
         if found is not None and float(found.group(2)) >= float(MIN_SCORE):
-            sequence_scores.append(found.group(1))
-            domain_scores.append(found.group(2))
+            sequence_scores.append(float(found.group(1)))
+            domain_scores.append(float(found.group(2)))
             # Attach the database name to the sequence id for easier identification
             sequence_ids.append(found.group(3))
-            #print found.group(1),found.group(2),found.group(3) #Troubleshooting
         elif line.startswith(">>") or line.startswith("//"): # Now we stop reading the file!
             break
 
@@ -144,7 +139,6 @@ def _parse_hmmsearch_output(filename,MIN_SCORE=0):
     if score_id_tuples == []:
         raise ValueError
     else:
-        #print "Found",len(sequence_ids),"sequences above score",MIN_SCORE
         returntuple = (score_id_tuples,dbpath)
         return returntuple
 ############## END  parse_hmmsearch_output
@@ -159,7 +153,7 @@ def _classify_qnr(sequence_length, domain_score, func="", longseqcutoff=75, long
 
     Uses the domain_score and a user defined function
     to classify a given sequence as putative Qnr or not.
-    Contains a hardcoded minimum fragment length of 10
+    Contains a hardcoded minimum fragment length of 20
     under which the function will unconditionally return false.
 
     Input::
@@ -182,17 +176,20 @@ def _classify_qnr(sequence_length, domain_score, func="", longseqcutoff=75, long
         (none)
     """
 
-    # Pretty self-explanatory. Has a range in which the classification
-    # function is used, determined by the first if-statement
     return (sequence_length >= longseqdef and domain_score >= longseqcutoff) or (sequence_length >= minlength and sequence_length < longseqdef and domain_score > func(float(sequence_length)))
 
+    # Pretty self-explanatory. Has a range in which the classification
+    # function is used, determined by the first if-statement
     if (int(sequence_length) >= int(longseqdef)) and (float(domain_score) >= float(longseqcutoff)):
         return True
     elif int(sequence_length) < minlength: # PREVOUSLY HARDCODED MIN FRAGMENT LENGTH 20
         return False
+    elif int(sequence_length) < int(longseqdef):
+        if float(domain_score) > func(float(sequence_length)):
+            return True
+        else:
+            return False
     else:
-        return int(sequence_length) < int(longseqdef) and float(domain_score) > func(float(sequence_length))
-
-
+        return False
 ######################### END classify_qnr
 

@@ -29,7 +29,6 @@ def run_sieve(sieve, paths, logfile):
             if sieve.indbflags:
                 indb.set_flags(sieve.indbflags)
             flag = getattr(sieve, 'indbaccess') if hasattr(sieve, 'indbaccess') else db.DB_RDONLY
-            print(flag)
             indb.open(indbpath, sieve.indbmode, flag | db.DB_THREAD )
         if hasattr(sieve, 'outdbmode'):
             outdb = db.DB()
@@ -46,8 +45,8 @@ def run_sieve(sieve, paths, logfile):
             outdb.close()
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
 
-def run_sieves(sieves, dbs, files, logfile):
-    for i in xrange(0, len(sieves)):
+def run_sieves(sieves, dbs, files, logfile, startindex=0):
+    for i in xrange(startindex, len(sieves)):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
             sieve = s.create(params, logfile)

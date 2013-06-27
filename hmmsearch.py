@@ -23,7 +23,7 @@ class HMMSearch(Sieve):
         self.name = 'HMMer search'
         self.param_names = [
             'model_path',
-            ('numcpu', 1),
+            ('numcpu', 4),
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
             # for crashing if not used and it only increases the number of really low
