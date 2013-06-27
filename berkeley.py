@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import json
 import uuid
-import bsddb
+import bsddb3 as bsddb
 
 
 def create_db(name):

@@ -4,16 +4,22 @@ import shlex
 import subprocess
 from datetime import date
 import time
-from bsddb import db
+import json
+from bsddb3 import db
 from sieve import Sieve
+from parser import Parser
 
 def create(params, logfile):
     return HMMSearch(params, logfile)
 
 class HMMSearch(Sieve):
+
     def init(self, params):
+        self.indbaccess = 0
+        self.indbflags = None
+        self.indbmode = db.DB_HASH
         self.outdbflags = None
-        self.outdbmode = db.DB_HASH
+        self.outdbmode = db.DB_RECNO
         self.name = 'HMMer search'
         self.param_names = [
             'model_path',
@@ -21,10 +27,32 @@ class HMMSearch(Sieve):
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
             # for crashing if not used and it only increases the number of really low
-            ('use_heuristics', True)
+            ('use_heuristics', True),
+            ('classifyK', 0.7778),
+            ('classifyC', 109.64),
+            ('classifyM', -7.89),
+            ('classifyD', 150.64),
+            ('minscore', 0)
         ]
 
+
     def run(self, indb, infilepath, outdb, outfilepath):
+
+        classificationfunction = lambda L: self.classifyK*L + self.classifyM
+
+        self.hmmsearch(infilepath, outfilepath)
+
+        parser = Parser(self.logfile, classificationfunction)
+        #db = berkeley.open_fragments('rw') originally, in and out is the same in parser!
+        result = parser.parse_file(indb, outfilepath, self.minscore, self.classifyC, self.classifyD)
+        for sequence in result:
+            doc = json.dumps(sequence)
+            outdb.append(doc)
+
+
+    #Runs hmmsearch on FASTA file, store HMMer output in its own format.
+    #Needs to be parsed by Parser.
+    def hmmsearch(self, infilepath, outfilepath):
         logfile = self.logfile
 
         heurflag = '--max' if self.use_heuristics else ''

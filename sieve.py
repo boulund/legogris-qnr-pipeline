@@ -1,6 +1,6 @@
 #!/bin/python
 from __future__ import print_function
-from bsddb import db
+from bsddb3 import db
 import time
 
 class Sieve(object):
@@ -28,18 +28,21 @@ def run_sieve(sieve, paths, logfile):
             indb = db.DB()
             if sieve.indbflags:
                 indb.set_flags(sieve.indbflags)
-            indb.open(indbpath, sieve.indbmode, db.DB_RDONLY) #RDONLY only a guess!
+            flag = getattr(sieve, 'indbaccess') if hasattr(sieve, 'indbaccess') else db.DB_RDONLY
+            print(flag)
+            indb.open(indbpath, sieve.indbmode, flag | db.DB_THREAD )
         if hasattr(sieve, 'outdbmode'):
             outdb = db.DB()
             if sieve.outdbflags:
                 outdb.set_flags(sieve.outdbflags)
-            outdb.open(outdbpath, sieve.outdbmode, db.DB_CREATE)
+            flag = getattr(sieve, 'outdbaccess') if hasattr(sieve, 'outdbaccess') else db.DB_CREATE
+            outdb.open(outdbpath, sieve.outdbmode, flag | db.DB_THREAD)
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         return sieve.run(indb, infilepath, outdb, outfilepath)
     finally:
-        if indb:
+        if not indb is None:
             indb.close()
-        if outdb:
+        if not outdb is None:
             outdb.close()
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
 

@@ -3,7 +3,7 @@ from __future__ import print_function
 import types
 import sys
 
-from bsddb import db
+from bsddb3 import db
 from translator import translate_sequence
 from sieve import Sieve
 
@@ -43,8 +43,6 @@ class FastaReader(Sieve):
         finally:
             infile.close()
             outfile.close()
-
-
 
 
 if __name__ == "__main__":
