@@ -29,25 +29,28 @@ class HMMSearch(Sieve):
             # for crashing if not used and it only increases the number of really low
             ('use_heuristics', True),
             ('classifyK', 0.7778),
-            ('classifyC', 109.64),
+            ('classifyC', 109.64), #the classification cutoff (minimum score) for long sequence. defparam = 75
             ('classifyM', -7.89),
-            ('classifyD', 150.64),
-            ('minscore', 0)
+            ('classifyD', 150.64), #the definition for long sequences. defparam = 85
+            ('minscore', 0),
+            ('minlength', 20), #minimum fragment length allowed.
+            ('classificationfunction', lambda L: self.classifyK*L + self.classifyM)
         ]
 
 
     def run(self, indb, infilepath, outdb, outfilepath):
 
-        classificationfunction = lambda L: self.classifyK*L + self.classifyM
-
         self.hmmsearch(infilepath, outfilepath)
 
-        parser = Parser(self.logfile, classificationfunction)
-        result = parser.parse_file(indb, outfilepath, self.minscore, self.classifyC, self.classifyD)
+        parser = Parser(self.logfile)
+        result = parser.parse_file(indb, outfilepath, self.minscore)
+        passed_count = 0
         for sequence in result:
-            doc = json.dumps(sequence)
-            outdb.append(doc)
-
+            if self.classify_sequence(sequence):
+                doc = json.dumps(sequence)
+                outdb.append(doc)
+                passed_count += 1
+        self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))
 
     #Runs hmmsearch on FASTA file, store HMMer output in its own format.
     #Needs to be parsed by Parser.
@@ -85,6 +88,39 @@ class HMMSearch(Sieve):
         logfile.write("Finished hmmsearching the databases at: "+t+"\n")
         logfile.line()
         logfile.flush()
+
+    ##---------------------------------------------------------------------------##
+    ##                      CLASSIFY SEQUENCE                                    ##
+    ##---------------------------------------------------------------------------##
+    def classify_sequence(self, sequence):
+        """
+        Classifies a sequence as Qnr or not.
+
+        Uses the domain_score and a user defined function
+        to classify a given sequence as putative Qnr or not.
+        Will always return false for fragments sorter that min_length.
+
+        Input::
+
+            sequence_length The sequence to classify
+
+        Returns::
+
+            classification  a boolean determining whether it should be classified
+                            recording to the model or not.
+
+        Errors::
+
+            (none)
+        """
+        sequence_length = len(sequence['protein'])
+        longseqcutoff = self.classifyC
+        longseqdef = self.classifyD
+        # Pretty self-explanatory. Has a range in which the classification
+        # function is used.
+        return (sequence_length >= longseqdef and sequence['dscore'] >= longseqcutoff) or (sequence_length >= self.minlength and sequence_length < longseqdef and sequence['dscore'] > self.classificationfunction(sequence_length))
+
+    ######################### END classify_qnr
 
 if __name__ == 'main':
     pass
