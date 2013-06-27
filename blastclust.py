@@ -2,49 +2,33 @@ from datetime import date
 import time
 import pickle
 
-import berkeley
 import json
 from fluff import PathError, cleanup
 import fluff
 
-TMPDIR = "./pipeline_data/"
+def create(params, logfile):
+    return BLASTClusterer(params, logfile)
 
-class BLASTClusterer:
-    def __init__(self, logfile):
-        self.logfile = logfile
+class BLASTClusterer(Sieve):
+    def init(self, params):
+        self.indbflags = None
+        self.indbmode = db.DB_RECNO
+        self.outdbflags = db.DB_DUPSORT
+        self.outdbmode = db.DB_HASH
+        self.name = 'BLASTClust'
+        self.param_names = [
+            ('numcpu', 0), #Number of CPUs to use, 0 means all
+            ('percent_identity', 90) # Percent identity threshold, range 3-100
+            ('coverage_threshold', 0.25) # Coverage threshold for blastclust, range 0.1-0.99
+        ]
 
-    # Number of CPUs to use, 0 means all
-    # Percent identity threshold, range 3-100
-    # Coverage threshold for blastclust, range 0.1-0.99
-    def run(self, filepath, numcores, percent_identity, cov_threshold):
+
+    #def run(self, filepath, numcores, percent_identity, cov_threshold):
+    #TODO: Ensure blastclust gets maximum 64 lines of FASTA (64*80 columns)
+    def run(self, indb, infilepath, outdb, outfilepath):
         logfile = self.logfile
-        # Shorten the sequences that are too long, since blastclust seems to have
-        # trouble aligning very long sequences (e.g. complete sequence genomes).
-        try:
-            SeqFilename = _limit_sequence_length(filepath,64) # limit to 64 columns of sequence
-        except PathError, e:
-            logfile.write(e.message+"\n")
-            logfile.write("\nThe clustering part of the pipeline is dependent of files from previous parts in the "+TMPDIR+" directory\n")
-            exit(1)
 
-
-        # Uniqueify the sequence IDs; needed for blastclust to cluster them since only
-        # the first part of the identifier is parsed and thus sequence IDs risk becoming non-
-        # unique. It is also a safeguard against redundant data sets.
-        # (TODO: might be possible to use python "set" to remove duplicates, but
-        # that would require checking of entire sequences to ensure robustness)
-        # SeqFilename = TMPDIR+"retrieved_sequences.fasta.shortened"
-        # UnSeqFilename = TMPDIR+"unique_retrieved_sequences.fasta.shortened"
-
-        #Removed b/c of berkeley
-        #UnSeqFilename = SeqFilename+'.unique'
-        #try:
-        #    unique_sequences = _uniqueify_seqids(SeqFilename,UnSeqFilename)
-        #except ValueError:
-        #    logfile.write("Could not uniqueify the sequence IDs!\n")
-        #    cleanup(TMPDIR)
-        #    exit(1)
-        #TODO: Make function that takes passed fragments and create sinput file for blastclust
+        #TODO: Make function that takes passed fragments and creates input file for blastclust
         #look into skipping fasta middle step?
         filename = _create_fasta_from_passed_fragments()
 
