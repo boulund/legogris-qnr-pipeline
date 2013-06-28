@@ -29,7 +29,7 @@ class HMMSearch(Sieve):
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
             # for crashing if not used and it only increases the number of really low
-            ('use_heuristics', True),
+            ('use_heuristics', False),
             ('classifyK', 0.7778),
             ('classifyC', 109.64), #the classification cutoff (minimum score) for long sequence. defparam = 75
             ('classifyM', -7.89),
@@ -76,6 +76,7 @@ class HMMSearch(Sieve):
 
         # Put together the entire string to call hmmsearch
         call_list = 'hmmsearch --cpu %d --notextw %s -o %s %s %s' % (self.numcpu, heurflag, self.hmmsearch_out, self.model_path, infilepath)
+        print(call_list)
         hmmsearch = shlex.split(call_list)
         # Run hmmsearch
         try:
