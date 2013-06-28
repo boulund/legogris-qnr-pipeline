@@ -15,7 +15,7 @@ def create(params, logfile):
 class BLASTClusterer(Sieve):
     def init(self, params):
         self.indbflags = None
-        self.indbmode = db.DB_RECNO
+        self.indbmode = db.DB_HASH
         self.outdbflags = db.DB_DUPSORT
         self.outdbmode = db.DB_HASH
         self.name = 'BLASTClust'

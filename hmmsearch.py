@@ -20,7 +20,7 @@ class HMMSearch(Sieve):
         self.indbflags = None
         self.indbmode = db.DB_HASH
         self.outdbflags = None
-        self.outdbmode = db.DB_RECNO
+        self.outdbmode = db.DB_HASH
         self.name = 'HMMer search'
         self.param_names = [
             'model_path',
@@ -52,8 +52,7 @@ class HMMSearch(Sieve):
         try:
             for sequence in result:
                 if self.classify_sequence(sequence):
-                    doc = json.dumps(sequence)
-                    outdb.append(doc)
+                    outdb.put(str(sequence['id']), json.dumps(sequence))
                     outfile.write(fragment_to_fasta(sequence))
                     passed_count += 1
         finally:

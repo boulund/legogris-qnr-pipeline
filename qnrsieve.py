@@ -22,7 +22,7 @@ try:
         ['', 'tutorial/fragments.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
         [inpath, 'tutorial/fragments.pfa', 'tutorial/fragments_passed.pfa', 'tutorial/blastclust_in.pfa'],   #files
         logfile,
-        2 #DEBUG: Skip first step
+        0 #DEBUG: Skip first step
     )
 finally:
     logfile.close()
