@@ -8,6 +8,7 @@ import json
 from bsddb3 import db
 from sieve import Sieve
 from parser import Parser
+from fluff import fragment_to_fasta
 
 def create(params, logfile):
     return HMMSearch(params, logfile)
@@ -23,6 +24,7 @@ class HMMSearch(Sieve):
         self.name = 'HMMer search'
         self.param_names = [
             'model_path',
+            'hmmsearch_out',
             ('numcpu', 4),
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
@@ -40,21 +42,27 @@ class HMMSearch(Sieve):
 
     def run(self, indb, infilepath, outdb, outfilepath):
 
-        self.hmmsearch(infilepath, outfilepath)
+        self.hmmsearch(infilepath)
 
-        parser = Parser(self.logfile)
-        result = parser.parse_file(indb, outfilepath, self.minscore)
+        result = Parser(self.logfile).parse_file(indb, self.hmmsearch_out, self.minscore)
+
+        #Put result in db and sequences in outfile
         passed_count = 0
-        for sequence in result:
-            if self.classify_sequence(sequence):
-                doc = json.dumps(sequence)
-                outdb.append(doc)
-                passed_count += 1
-        self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))
+        outfile = open(outfilepath, 'w')
+        try:
+            for sequence in result:
+                if self.classify_sequence(sequence):
+                    doc = json.dumps(sequence)
+                    outdb.append(doc)
+                    outfile.write(fragment_to_fasta(sequence))
+                    passed_count += 1
+        finally:
+            self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))
+            outfile.close()
 
     #Runs hmmsearch on FASTA file, store HMMer output in its own format.
     #Needs to be parsed by Parser.
-    def hmmsearch(self, infilepath, outfilepath):
+    def hmmsearch(self, infilepath):
         logfile = self.logfile
 
         heurflag = '--max' if self.use_heuristics else ''
@@ -68,7 +76,7 @@ class HMMSearch(Sieve):
         logfile.debug("Sensitivity (empty means default): "+heurflag+"\n")
 
         # Put together the entire string to call hmmsearch
-        call_list = 'hmmsearch --cpu %d --notextw %s -o %s %s %s' % (self.numcpu, heurflag, outfilepath, self.model_path, infilepath)
+        call_list = 'hmmsearch --cpu %d --notextw %s -o %s %s %s' % (self.numcpu, heurflag, self.hmmsearch_out, self.model_path, infilepath)
         hmmsearch = shlex.split(call_list)
         # Run hmmsearch
         try:

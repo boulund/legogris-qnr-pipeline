@@ -1,8 +1,10 @@
 from datetime import date
 import time
 import pickle
-
 import json
+from bsddb3 import db
+
+from sieve import Sieve
 from fluff import PathError, cleanup
 import fluff
 
@@ -17,9 +19,11 @@ class BLASTClusterer(Sieve):
         self.outdbmode = db.DB_HASH
         self.name = 'BLASTClust'
         self.param_names = [
+            'blastclust_out',
             ('numcpu', 0), #Number of CPUs to use, 0 means all
-            ('percent_identity', 90) # Percent identity threshold, range 3-100
-            ('coverage_threshold', 0.25) # Coverage threshold for blastclust, range 0.1-0.99
+            ('percent_identity', 90), # Percent identity threshold, range 3-100, default is 90 %
+            ('coverage_threshold', 0.25), # Coverage threshold for blastclust, range 0.1-0.99
+            ('reference_sequence_path', '') #Reference sequences to add to infile before clustering
         ]
 
 
@@ -28,45 +32,37 @@ class BLASTClusterer(Sieve):
     def run(self, indb, infilepath, outdb, outfilepath):
         logfile = self.logfile
 
-        #TODO: Make function that takes passed fragments and creates input file for blastclust
-        #look into skipping fasta middle step?
-        filename = _create_fasta_from_passed_fragments()
-
-
         # Run formatdb on the file outputted from uniqueify_seqids and
         # then run blastclust to cluster results (all in one function)
         t = time.asctime(time.localtime())
-        logfile.write("Creating temporary database and running blastclust at: "+t+"\n")
+        logfile.writeline("Running blastclust at: "+t)
         logfile.flush()
 
+        if self.reference_sequence_path and path.isfile(self.reference_sequence_path):
+            system('cat %s >> %s' % (self.reference_sequence_path, infilepath))
+            logfile.write("Added reference sequences from "+self.reference_sequence_path+" to set to cluster\n")
         try:
-            #logfile.write("Running blastclust with the following settings:\n" \
-            #              " Percent identity: "+str(percent_identity)+"\n Coverage Threshold: "+ \
-            #              str(cov_threshold)+"\n Number of CPUs: "+str(numcores)+"\n")
-
-            blastclust_return_text, blastclust_output = _run_blastclust(filename,percent_identity,cov_threshold,numcores)
+            blastclust_return_text, blastclust_output, blastclustoutputfile = self.run_blastclust(infilepath)
 
             if "error" in blastclust_return_text:
-                logfile.write(blastclust_output+"\n")
-                cleanup(TMPDIR)
+                logfile.writeline(blastclust_output)
                 exit(1)
             elif "ERROR" in blastclust_output[1]:
-                logfile.write(blastclust_output[1]+"\n")
-                cleanup(TMPDIR)
+                logfile.writeline(blastclust_output[1])
                 exit(1)
             else:
-                logfile.write(blastclust_return_text+"\n"+blastclust_output[0])
+                logfile.writeline(blastclust_return_text)
+                logfile.writeline(blastclust_output[0])
 
         except PathError, e:
-            logfile.write(e.message+"\n"+filename+"\n")
-            cleanup(TMPDIR)
+            logfile.writeline(e.message)
+            logfile.writeline(filename)
             exit(1)
 
 
         # Parse output from blastclust (and de-uniqueify sequences IDs -- not needed anymore)
-        blastclustoutputfile = filename+".clusters"
         try:
-            clusters = _parse_blastclust(blastclustoutputfile)
+            clusters = self.parse_blastclust(blastclustoutputfile)
         except PathError, e:
             logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
             cleanup(TMPDIR)
@@ -76,22 +72,119 @@ class BLASTClusterer(Sieve):
             cleanup(TMPDIR)
             exit(1)
 
+        print(clusters)
         return clusters
 
+##-----------------------------------------------##
+##                 RUN BLASTCLUST                ##
+##-----------------------------------------------##
+    def run_blastclust(self, infilepath):
+        '''
+        Run formatdb to create a BLAST database, then run
+        blastclust on that database to cluster all hits.
 
-def _create_fasta_from_passed_fragments():
-    outfile = open(''.join([TMPDIR, 'blastclust.fasta']), 'w')
-    try:
-        db = berkeley.open_fragments_passed()
-        for i in db.items():
-            outfile.write(fluff.fragment_to_fasta(json.loads(i[1])))
-        return outfile.name
-    except IOError:
-        logfile.write('Error opening BLASTclust FASTA temp file')
-        cleanup(TMPDIR)
-        exit(1)
-    finally:
-        outfile.close()
+        Input::
+
+            infilepath  filename with sequences with unique ids to cluster.
+
+        Returns::
+
+            (None)      Writes output to a file, 'filename.clusters' that contains
+                        all identified clusters on each row.
+
+        Errors::
+
+            PathError   raied if there is something wrong with the paths to output
+                        or input files.
+            ValueError  raised if there is something wrong
+
+        '''
+
+        from os import path
+        import shlex, subprocess
+
+        logfile = self.logfile
+        if not(path.exists(path.abspath(infilepath))):
+            raise PathError("ERROR: The path to unique sequence id hit file is incorrect")
+
+        # Create string for calling the subprocess 'formatdb'
+        formatdb_call = 'formatdb -t SignificantHits_UniqueSeqIDs -i %s' % infilepath
+        try:
+            formatdb = shlex.split(formatdb_call)
+            subprocess.call(formatdb)
+            return_text = "Created BLAST database with unique sequence IDs"
+        except OSError:
+            return_text = "The formatdb command could not be run:", formatdb_call
+
+        # Run blastclust in a similar way
+        outfilepath = ''.join([infilepath, '.clusters'])
+        blastclust_call = 'blastclust -d %s -S %d -a %d -L %f -o %s' % (infilepath, self.percent_identity, self.numcpu, self.coverage_threshold, outfilepath)
+
+        try:
+            blastclust = shlex.split(blastclust_call)
+            logfile.writeline('Running BLASTclust!')
+
+            blastclust_output = subprocess.Popen(blastclust,\
+                                    stdout=subprocess.PIPE,\
+                                    stderr=subprocess.PIPE).communicate()
+        except OSError:
+            returnstring = ''.join(["ERROR: Blastclust could not be run. Is it properly installed?\n",
+                                    "The following call was made: $", blastclust_call])
+            return ("error",returnstring, outfilepath)
+
+
+        return (return_text, blastclust_output, outfilepath)
+############## END run_blastclust
+
+##-----------------------------------------------##
+##          PARSE OUTPUT FROM BLASTCLUST         ##
+##-----------------------------------------------##
+    def parse_blastclust(self, filename):
+        '''
+        Parses blastclust output into a nested list structure
+
+        Input::
+
+            filename    filename of blastclust output
+
+        Returns::
+
+            sequenceIDs list of sequence IDs with unique identifiers right after
+                        the '>' symbol
+
+        Errors::
+
+            PathError   raised if the file does not exists
+            ValueError  rasied if no unique identifiers could be found and removed
+
+        '''
+
+        from os import path
+        logfile = self.logfile
+
+        if not(path.isfile(path.abspath(filename))):
+            raise PathError("ERROR: The blastclust output file could not be opened")
+
+        try:
+            filepath = path.abspath(filename)
+            file = open(filepath,'r')
+        except OSError:
+            print "ERROR: Could not open", filepath
+            exit(1)
+
+        sequenceIDs = []
+
+        try:
+            for line in file:
+                sequenceIDs.append(line.rstrip('\n ').split(' '))
+        finally:
+            file.close()
+
+        if sequenceIDs == []:
+            raise ValueError
+
+        return sequenceIDs
+############## END parse_blastclust
 
 ##-----------------------------------------------##
 ##              LIMIT SEQUENCE LENGTH            ##
@@ -201,199 +294,6 @@ def _limit_sequence_length(sequencefile,MAX_LINES=64):
     return outfilename
 ############## END limit_sequence_length
 
-##-----------------------------------------------##
-##            UNIQUE:IFY SEQUENCE IDS            ##
-##-----------------------------------------------##
-def _uniqueify_seqids(sequences,filename):
-    '''
-    Unique:ify sequences identifiers in fasta formatted
-    sequences by adding an integer right after the sequence
-    identifer at the first space.
-
-    Input::
-
-        sequences   filename with sequences in fasta format to unique:ify
-        filename    the output filename for unique sequences
-
-    Returns::
-
-        (None)      The list of strings in fasta format with all sequences
-                    inputted sequences, now with added [integer] right after
-                    the sequence identifier, is written out to a file for
-                    further usage in the OS environment (i.e. in formatdb)
-
-    Errors::
-
-        ValueError  raised if the input filenames are not valid
-        PathError   raised if the input filename path is invalid
-
-    '''
-
-    from os import path
-    import re
-
-    if not(isinstance(sequences,str)):
-        raise ValueError("Input sequences filename to uniqueify_seqids was not a string!")
-    if not(isinstance(filename,str)):
-        raise ValueError("Output filename to uniqueify_seqids was not a string!")
-
-    # Open file for reading
-    try:
-        infile = open(path.abspath(sequences),'r')
-    except OSError:
-        raise PathError("ERROR: Path to file with sequence IDs to unique:ify is invalid!")
-    try:
-        outfile = open(path.abspath(filename),'w')
-    except OSError:
-        raise PathError("ERROR: The output filename for unique sequences could not be opened")
-
-
-
-    # Compile a regular expression to match the sequence identifier string and
-    # put it in two groups, first with sequence id and second with the
-    # rest of the sequence identifier line. The unique number will be inserted
-    # between the two.
-    ss = re.compile(r'^>([\S\.\-\_]+)(.*\n)')  # Removed a \s in (\s.*\n) at the end 201008xx
-    number = 1
-    for line in infile:
-        if line.startswith(">"):
-            hit = re.match(ss,line)
-            if hit is not None:
-                # Append the number and attach the rest of the line
-                # and write to outfile
-                outfile.write(''.join([">",hit.group(1),"--",str(number),hit.group(2)]))
-                number = number + 1
-        else:
-            # This would be the entire sequence on following lines until next ">"
-            outfile.write(line)
-
-    return
-############## END uniqueify_seqids
-
-
-
-
-##-----------------------------------------------##
-##                 RUN BLASTCLUST                ##
-##-----------------------------------------------##
-def _run_blastclust(filename,PercentIdentity=90,CovThreshold=50,numcores=4):
-    '''
-    Run formatdb to create a BLAST database, then run
-    blastclust on that database to cluster all hits.
-
-    Input::
-
-        filename        filename with sequences with unique ids to cluster.
-        PercentIdentity  the percent identity to cluster with, default is 90 %.
-        CovThreshold    the minimum length coverage threshold for clustering,
-                        default is 50 %
-        numcores        optional argument specifying the number of cores to run
-                        blastclust on, default is 4 and 0 means all available.
-
-    Returns::
-
-        (None)      Writes output to a file, 'filename.clusters' that contains
-                    all identified clusters on each row.
-
-    Errors::
-
-        PathError   raied if there is something wrong with the paths to output
-                    or input files.
-        ValueError  raised if there is something wrong
-
-    '''
-
-    from os import path
-    import shlex, subprocess
-
-    if not(path.exists(path.abspath(filename))):
-        raise PathError("ERROR: The path to unique sequence id hit file is incorrect")
-
-    # Create string for calling the subprocess 'formatdb'
-    formatdb_call = ''.join(["formatdb -t SignificantHits_UniqueSeqIDs -i ",filename])
-    try:
-        formatdb = shlex.split(formatdb_call)
-        subprocess.call(formatdb)
-        return_text = "Created BLAST database with unique sequence IDs"
-    except OSError:
-        return_text = "The formatdb command could not be run:", formatdb_call
-
-    # Run blastclust in a similar way
-    if not isinstance(CovThreshold,str):
-        CovThreshold = str(CovThreshold)
-    if not isinstance(PercentIdentity,str):
-        PercentIdentity = str(PercentIdentity)
-    if not isinstance(numcores,str):
-        numcores = str(numcores)
-
-    blastclust_call = ''.join(["blastclust -d ",path.abspath(filename),
-                              " -S ",PercentIdentity,
-                              " -a ",numcores,
-                              " -L ",CovThreshold,
-                              " -o ",filename,".clusters"])
-    try:
-        blastclust = shlex.split(blastclust_call)
-        print "Running BLASTclust!"
-
-        blastclust_output = subprocess.Popen(blastclust,\
-                                stdout=subprocess.PIPE,\
-                                stderr=subprocess.PIPE).communicate()
-    except OSError:
-        returnstring = ''.join(["ERROR: Blastclust could not be run. Is it properly installed?\n",
-                                "The following call was made: $", blastclust_call])
-        return ("error",returnstring)
-
-
-    return (return_text,blastclust_output)
-############## END run_blastclust
-
-
-##-----------------------------------------------##
-##          PARSE OUTPUT FROM BLASTCLUST         ##
-##-----------------------------------------------##
-def _parse_blastclust(filename):
-    '''
-    Parses blastclust output into a nested list structure
-
-    Input::
-
-        filename    filename of blastclust output
-
-    Returns::
-
-        sequenceIDs list of sequence IDs with unique identifiers right after
-                    the '>' symbol
-
-    Errors::
-
-        PathError   raised if the file does not exists
-        ValueError  rasied if no unique identifiers could be found and removed
-
-    '''
-
-    from os import path
-
-    if not(path.isfile(path.abspath(filename))):
-        raise PathError("ERROR: The blastclust output file could not be opened")
-
-    try:
-        filepath = path.abspath(filename)
-        file = open(filepath,'r')
-    except OSError:
-        print "ERROR: Could not open", filepath
-        exit(1)
-
-    sequenceIDs = []
-
-    for line in file:
-        sequenceIDs.append(line.rstrip("\n ").split(" "))
-
-
-    if sequenceIDs == []:
-        raise ValueError
-
-    return sequenceIDs
-############## END parse_blastclust
 
 
 ##-----------------------------------------------##
