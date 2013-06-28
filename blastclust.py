@@ -3,6 +3,7 @@ import time
 import pickle
 import json
 from bsddb3 import db
+import uuid
 
 from sieve import Sieve
 from fluff import PathError, cleanup
@@ -20,6 +21,8 @@ class BLASTClusterer(Sieve):
         self.name = 'BLASTClust'
         self.param_names = [
             'blastclust_out',
+            ('clusters_out_path', ''),
+            ('clusters_with_scores_out_path', ''),
             ('numcpu', 0), #Number of CPUs to use, 0 means all
             ('percent_identity', 90), # Percent identity threshold, range 3-100, default is 90 %
             ('coverage_threshold', 0.25), # Coverage threshold for blastclust, range 0.1-0.99
@@ -72,7 +75,41 @@ class BLASTClusterer(Sieve):
             cleanup(TMPDIR)
             exit(1)
 
-        print(clusters)
+        # Output the identified cluster to files,
+        # one with clean clusters and one with scores
+        clusterout = withscores = None
+        if self.clusters_out_path:
+            clusterout = open(self.clusters_out_path,"w")
+        if self.clusters_with_scores_out_path:
+            withscores = open(self.clusters_with_scores_out_path,"w")
+        outdb.truncate()
+        try:
+            for cluster in clusters:
+                cid = uuid.uuid4().hex
+                for seqID in cluster:
+                    outdb.put(cid, seqID)
+                    if clusterout or withscores:
+                        seq = json.loads(indb[seqID])
+                        if clusterout:
+                            clusterout.write(''.join([seq['name'],' ']))
+                        if withscores:
+                            withscores.write(''.join([seq['name'],"--",
+                                        str(seq['score']),"--",str(seq['dscore']),' ']))
+                if clusterout:
+                    clusterout.write('\n')
+                if withscores:
+                    withscores.write('\n')
+        finally:
+            if clusterout:
+                clusterout.close()
+            if withscores:
+                withscores.close()
+
+        t = time.asctime(time.localtime())
+        logfile.writeline("Found " + str(len(clusters)) + " clusters")
+        logfile.writeline("Finished clustering sequences at: "+t)
+        logfile.line()
+        logfile.flush()
         return clusters
 
 ##-----------------------------------------------##
@@ -122,8 +159,6 @@ class BLASTClusterer(Sieve):
 
         try:
             blastclust = shlex.split(blastclust_call)
-            logfile.writeline('Running BLASTclust!')
-
             blastclust_output = subprocess.Popen(blastclust,\
                                     stdout=subprocess.PIPE,\
                                     stderr=subprocess.PIPE).communicate()
@@ -293,119 +328,4 @@ def _limit_sequence_length(sequencefile,MAX_LINES=64):
 
     return outfilename
 ############## END limit_sequence_length
-
-
-
-##-----------------------------------------------##
-##            DE-UNIQUEIFY SEQUENCE IDS          ##
-##-----------------------------------------------##
-def _deuniqueify_seqids(sequenceIDs,readfile=False):
-    '''
-    Removes unique identifiers appended to sequence IDs in
-    fasta format by 'uniqueify_seqids'.
-
-    Second option is to read a file and de-unique:ify the
-    sequence identifiers found in that file;
-    the file formats understood are regular fasta and
-    clustalw output.
-
-    Input::
-
-        sequenceIDs list of sequence IDs (parsed from blastclust
-                    output)
-        readfile    boolean determining whether sequenceIDs contains
-                    a filename to read and correct rather than
-                    a list of sequence IDs parsed from blastclust.
-
-    Returns::
-
-        sequenceIDs list of sequence IDs without unique identifiers
-                    right after the '>' symbol
-        None        if readfile was true nothing is return, instead
-                    changes are written directly to file.
-
-    Errors::
-
-        ValueError  rasied if no unique identifiers could be found
-                    and removed
-        PathError   raised if there was some error regarding
-                    the file to be read.
-    '''
-    from os import path
-    import re
-
-    if readfile:
-        try:
-            filein = open(path.abspath(sequenceIDs),'r')
-            fileout = open(path.abspath(sequenceIDs+".restored"),'w')
-        except OSError:
-            raise PathError("Could not open multiple alignment file to de-uniqueify!")
-
-        line = filein.readline()
-
-        # FASTA FORMAT
-        if line.startswith(">"):
-            print "FASTA format detected"
-            regex = r'^(>[\S\.-_]+)--\d+(\s.*\n)'
-            regex = re.compile(regex)
-            hit = re.match(regex,line)
-            if hit is not None:
-                fileout.write(''.join([hit.group(1), hit.group(2)]))
-            else:
-                print "Parse error of first line!!"
-                return
-            while filein:
-                line = filein.readline()
-                if line == "":
-                    break
-
-                hit = re.match(regex,line)
-                if hit is not None:
-                    fileout.write(''.join([hit.group(1), hit.group(2)]))
-                else:
-                    fileout.write(line)
-
-        # CLUSTAL FORMAT
-        elif line.startswith("CLUSTAL"):
-            print "ClustalW format detected"
-            regex = r'([\S\-_]+)(--\d+)(\s+.*\n)'
-            regex = re.compile(regex)
-            fileout.write(line)
-            spacesize = 0
-            while filein:
-                line = filein.readline()
-                if line == "":
-                    break
-                hit = re.match(regex,line)
-                if hit is not None:
-                    fileout.write(''.join([hit.group(1), hit.group(3)]))
-                    spacesize = len(hit.group(2))
-                else:
-                    fileout.write(line[spacesize:])
-
-        # UNKNOWN FORMAT; DIE
-        else:
-            print "No known format detected; accepts only CLUSTAL or fasta"
-
-        return
-
-    # NOT READING FROM FILE BUT FROM LIST OF SEQUENCES
-    else:
-        clean_sequenceIDs = []
-
-        for cluster in sequenceIDs:
-            temp_cluster = [] # Temporary storage of cluster members
-            for seqID in cluster:
-                # Match the number at the end and remove it
-                pattern = r'([\S\-_]+)--\d+'
-                found = re.match(pattern,seqID)
-                if found is not(None):
-                    temp_cluster.append(found.group(1))
-            clean_sequenceIDs.append(temp_cluster)
-
-        if clean_sequenceIDs == []:
-            raise ValueError
-
-        return clean_sequenceIDs
-############## END deuniqueify_seqids
 
