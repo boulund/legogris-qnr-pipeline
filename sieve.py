@@ -1,6 +1,7 @@
 #!/bin/python
 from __future__ import print_function
-from bsddb3 import db
+
+import leveldb
 import time
 
 class Sieve(object):
@@ -34,30 +35,26 @@ def run_sieve(sieve, paths, logfile, dbenv):
             indnadb.open(indbpath, dbname='dna', dbtype=sieve.indbmode, flags=flag | db.DB_THREAD )
             inprotdb.open(indbpath, dbname='prot', dbtype=sieve.indbmode, flags=flag | db.DB_THREAD )
         if hasattr(sieve, 'outdbmode'):
-            outdnadb = db.DB(dbenv)
-            outprotdb = db.DB(dbenv)
-            if sieve.outdbflags:
-                outdnadb.set_flags(sieve.outdbflags)
-                outprotdb.set_flags(sieve.outdbflags)
-            flag = getattr(sieve, 'outdbaccess') if hasattr(sieve, 'outdbaccess') else db.DB_CREATE
-            outdnadb.open(outdbpath, dbname='dna', dbtype=sieve.outdbmode, flags=flag | db.DB_THREAD | db.DB_TRUNCATE)
-            outprotdb.open(outdbpath, dbname='prot', dbtype=sieve.outdbmode, flags=flag | db.DB_THREAD)
+            outdnadb = leveldb.LevelDB(outdbpath+'.dna')
+            outprotdb = leveldb.LevelDB(outdbpath+'.prot')
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         return sieve.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
     finally:
         if not indnadb is None:
-            indnadb.close()
+            del indandb
         if not inprotdb is None:
-            inprotdb.close()
+            del inprotdb
         if not outdnadb is None:
-            outdnadb.close()
+            del outdnadb
         if not outprotdb is None:
-            outprotdb.close()
+            del outprotdb
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         logfile.flush()
 
-def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0):
-    for i in xrange(startindex, len(sieves)):
+def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0, endindex=-1):
+    if endindex == -1:
+        endindex = len(sieves)
+    for i in xrange(startindex, endindex):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
             sieve = s.create(params, logfile)
@@ -66,11 +63,6 @@ def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0):
             for s in sieves[i]:
                 return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile, dbenv)
 
-def run_sieves(sieves, dbs, files, logfile, dbpath, startindex=0):
-    dbenv = db.DBEnv()
-    dbenv.set_cachesize(4, 0, 2)
-    dbenv.open(dbpath, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_THREAD, 0)
-    try:
-        _run_sieves(sieves, dbs, files, logfile, dbenv, startindex)
-    finally:
-        dbenv.close()
+def run_sieves(sieves, dbs, files, logfile, dbpath, startindex=0, endindex=-1):
+    dbenv = None
+    _run_sieves(sieves, dbs, files, logfile, dbenv, startindex, endindex)

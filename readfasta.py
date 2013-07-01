@@ -2,8 +2,8 @@
 from __future__ import print_function
 import types
 import sys
+import leveldb
 
-from bsddb3 import db
 from translator import translate_sequence
 from sieve import Sieve
 
@@ -12,29 +12,33 @@ def create(params, logfile):
 
 class FastaReader(Sieve):
     def init(self, params):
-        self.outdbflags = None
-        self.outdbmode = db.DB_HASH
+        self.outdbmode = True
         self.name = 'FASTA translator'
         self.param_names = [('item_limit', 0)]
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         infile = open(infilepath,'r')
         outfile = open(outfilepath, 'w')
+        dnabatch = leveldb.WriteBatch()
+        protbatch = leveldb.WriteBatch()
         try:
-            n = 0
+            n = m = 0
             tempseq = []
             for line in infile:
                 if line.startswith('>'):
                     n += 1
+                    m += 1
                     if self.item_limit and n > self.item_limit:
                         break
                     if len(tempseq) > 0:
                         dna = ''.join(tempseq)
                         (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
-                        outdnadb.put(id, dna)
+                        outdnadb.Put(id, dna)
                         for (frame, dump, out) in seqs:
-                            outprotdb.put(''.join([id, '_', str(frame)]), dump)
+                            protbatch.Put(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
+                        outprotdb.Write(protbatch) #, sync=True
+                        protbatch = leveldb.WriteBatch()
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
                 else:
@@ -42,11 +46,13 @@ class FastaReader(Sieve):
             #When the file is finished: Save the final sequence just like the others
             dna = ''.join(tempseq)
             (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
-            outdnadb.put(id, dna)
+            outdnadb.Put(id, dna)
             for (frame, dump, out) in seqs:
-                outprotdb.put(''.join([id, '_', str(frame)]), dump)
+                protbatch.Put(''.join([id, '_', str(frame)]), dump)
                 outfile.write(out)
+            outprotdb.Write(protbatch) #, sync=True
         finally:
+            #outdnadb.Write(dnabatch) #, sync=True
             infile.close()
             outfile.close()
 

@@ -25,7 +25,7 @@ def run():
             [inpath, 'tutorial/fragments.pfa', 'tutorial/fragments_passed.pfa', 'tutorial/blastclust_in.pfa'],   #files
             logfile,
             'tutorial/db',
-            0 #DEBUG: Skip first step
+            0,1
         )
     finally:
         logfile.close()
