@@ -21,9 +21,10 @@ def run():
                 (hmmsearch, {'model_path': 'tutorial/model.hmm', 'hmmsearch_out': 'tutorial/hmmsearch_out'}),
                 (blastclust, {'blastclust_out': 'tutorial/blastclust_out', 'clusters_out_path': 'tutorial/identified_clusters', 'clusters_with_scores_out_path': 'tutorial/identified_clusters.scores'})
             ],     #sieves
-            ['', 'tutorial/fragments.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
+            ['', 'fragments.db', 'fragments_passed.db', 'clusters.db'],   #dbs
             [inpath, 'tutorial/fragments.pfa', 'tutorial/fragments_passed.pfa', 'tutorial/blastclust_in.pfa'],   #files
             logfile,
+            'tutorial/db',
             0 #DEBUG: Skip first step
         )
     finally:

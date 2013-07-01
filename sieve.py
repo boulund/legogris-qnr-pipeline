@@ -20,18 +20,18 @@ class Sieve(object):
             else:
                 setattr(self, param_name, default_value)
 
-def run_sieve(sieve, paths, logfile):
+def run_sieve(sieve, paths, logfile, dbenv):
     (indbpath, infilepath, outdbpath, outfilepath) = paths
     indb = outdb = None
     try:
         if hasattr(sieve, 'indbmode'):
-            indb = db.DB()
+            indb = db.DB(dbenv)
             if sieve.indbflags:
                 indb.set_flags(sieve.indbflags)
             flag = getattr(sieve, 'indbaccess') if hasattr(sieve, 'indbaccess') else db.DB_RDONLY
             indb.open(indbpath, sieve.indbmode, flag | db.DB_THREAD )
         if hasattr(sieve, 'outdbmode'):
-            outdb = db.DB()
+            outdb = db.DB(dbenv)
             if sieve.outdbflags:
                 outdb.set_flags(sieve.outdbflags)
             flag = getattr(sieve, 'outdbaccess') if hasattr(sieve, 'outdbaccess') else db.DB_CREATE
@@ -45,12 +45,20 @@ def run_sieve(sieve, paths, logfile):
             outdb.close()
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
 
-def run_sieves(sieves, dbs, files, logfile, startindex=0):
+def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0):
     for i in xrange(startindex, len(sieves)):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
             sieve = s.create(params, logfile)
-            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile)
+            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbenv)
         elif isinstance(sieves[i], list):
             for s in sieves[i]:
-                return run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile)
+                return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile, dbenv)
+
+def run_sieves(sieves, dbs, files, logfile, dbpath, startindex=0):
+    dbenv = db.DBEnv()
+    dbenv.open(dbpath, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_THREAD, 0)
+    try:
+        _run_sieves(sieves, dbs, files, logfile, dbenv, startindex)
+    finally:
+        dbenv.close()
