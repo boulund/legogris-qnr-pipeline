@@ -54,6 +54,7 @@ def run_sieve(sieve, paths, logfile, dbenv):
         if not outprotdb is None:
             outprotdb.close()
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
+        logfile.flush()
 
 def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0):
     for i in xrange(startindex, len(sieves)):
@@ -67,6 +68,7 @@ def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0):
 
 def run_sieves(sieves, dbs, files, logfile, dbpath, startindex=0):
     dbenv = db.DBEnv()
+    dbenv.set_cachesize(4, 0, 2)
     dbenv.open(dbpath, db.DB_CREATE | db.DB_INIT_MPOOL | db.DB_THREAD, 0)
     try:
         _run_sieves(sieves, dbs, files, logfile, dbenv, startindex)
