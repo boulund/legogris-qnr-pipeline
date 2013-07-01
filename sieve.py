@@ -22,27 +22,37 @@ class Sieve(object):
 
 def run_sieve(sieve, paths, logfile, dbenv):
     (indbpath, infilepath, outdbpath, outfilepath) = paths
-    indb = outdb = None
+    indnadb = inprotdb =  outdnadb =  outprotdb = None
     try:
         if hasattr(sieve, 'indbmode'):
-            indb = db.DB(dbenv)
+            indnadb = db.DB(dbenv)
+            inprotdb = db.DB(dbenv)
             if sieve.indbflags:
-                indb.set_flags(sieve.indbflags)
+                indnadb.set_flags(sieve.indbflags)
+                inprotdb.set_flags(sieve.indbflags)
             flag = getattr(sieve, 'indbaccess') if hasattr(sieve, 'indbaccess') else db.DB_RDONLY
-            indb.open(indbpath, sieve.indbmode, flag | db.DB_THREAD )
+            indnadb.open(indbpath, dbname='dna', dbtype=sieve.indbmode, flags=flag | db.DB_THREAD )
+            inprotdb.open(indbpath, dbname='prot', dbtype=sieve.indbmode, flags=flag | db.DB_THREAD )
         if hasattr(sieve, 'outdbmode'):
-            outdb = db.DB(dbenv)
+            outdnadb = db.DB(dbenv)
+            outprotdb = db.DB(dbenv)
             if sieve.outdbflags:
-                outdb.set_flags(sieve.outdbflags)
+                outdnadb.set_flags(sieve.outdbflags)
+                outprotdb.set_flags(sieve.outdbflags)
             flag = getattr(sieve, 'outdbaccess') if hasattr(sieve, 'outdbaccess') else db.DB_CREATE
-            outdb.open(outdbpath, sieve.outdbmode, flag | db.DB_THREAD)
+            outdnadb.open(outdbpath, dbname='dna', dbtype=sieve.outdbmode, flags=flag | db.DB_THREAD | db.DB_TRUNCATE)
+            outprotdb.open(outdbpath, dbname='prot', dbtype=sieve.outdbmode, flags=flag | db.DB_THREAD)
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
-        return sieve.run(indb, infilepath, outdb, outfilepath)
+        return sieve.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
     finally:
-        if not indb is None:
-            indb.close()
-        if not outdb is None:
-            outdb.close()
+        if not indnadb is None:
+            indnadb.close()
+        if not inprotdb is None:
+            inprotdb.close()
+        if not outdnadb is None:
+            outdnadb.close()
+        if not outprotdb is None:
+            outprotdb.close()
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
 
 def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0):

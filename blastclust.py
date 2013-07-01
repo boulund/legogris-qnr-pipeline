@@ -32,7 +32,7 @@ class BLASTClusterer(Sieve):
 
     #def run(self, filepath, numcores, percent_identity, cov_threshold):
     #TODO: Ensure blastclust gets maximum 64 lines of FASTA (64*80 columns)
-    def run(self, indb, infilepath, outdb, outfilepath):
+    def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         logfile = self.logfile
 
         # Run formatdb on the file outputted from uniqueify_seqids and
@@ -82,14 +82,14 @@ class BLASTClusterer(Sieve):
             clusterout = open(self.clusters_out_path,"w")
         if self.clusters_with_scores_out_path:
             withscores = open(self.clusters_with_scores_out_path,"w")
-        outdb.truncate()
+        outprotdb.truncate()
         try:
             for cluster in clusters:
                 cid = uuid.uuid4().hex
                 for seqID in cluster:
-                    outdb.put(cid, seqID)
+                    outprotdb.put(cid, seqID)
                     if clusterout or withscores:
-                        seq = json.loads(indb[seqID])
+                        seq = json.loads(inprotdb[seqID])
                         if clusterout:
                             clusterout.write(''.join([seq['name'],' ']))
                         if withscores:

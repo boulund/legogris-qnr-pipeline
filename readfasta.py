@@ -17,7 +17,7 @@ class FastaReader(Sieve):
         self.name = 'FASTA translator'
         self.param_names = [('item_limit', 0)]
 
-    def run(self, indb, infilepath, outdb, outfilepath):
+    def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         infile = open(infilepath,'r')
         outfile = open(outfilepath, 'w')
         try:
@@ -29,16 +29,22 @@ class FastaReader(Sieve):
                     if self.item_limit and n > self.item_limit:
                         break
                     if len(tempseq) > 0:
-                        for (id, dump, out) in translate_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq)):
-                            outdb.put(id, dump)
+                        dna = ''.join(tempseq)
+                        (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
+                        outdnadb.put(id, dna)
+                        for (frame, dump, out) in seqs:
+                            outprotdb.put(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
                 else:
                     tempseq.append(line.rstrip())
             #When the file is finished: Save the final sequence just like the others
-            for (id, dump, out) in translate_sequence(seqid, seqdesc.lstrip(), ''.join(tempseq)):
-                outdb.put(id, dump)
+            dna = ''.join(tempseq)
+            (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
+            outdnadb.put(id, dna)
+            for (frame, dump, out) in seqs:
+                outprotdb.put(''.join([id, '_', str(frame)]), dump)
                 outfile.write(out)
         finally:
             infile.close()

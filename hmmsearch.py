@@ -6,6 +6,8 @@ from datetime import date
 import time
 import json
 from bsddb3 import db
+
+import translator
 from sieve import Sieve
 from parser import Parser
 from fluff import fragment_to_fasta
@@ -40,11 +42,11 @@ class HMMSearch(Sieve):
         ]
 
 
-    def run(self, indb, infilepath, outdb, outfilepath):
+    def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
 
         self.hmmsearch(infilepath)
 
-        result = Parser(self.logfile).parse_file(indb, self.hmmsearch_out, self.minscore)
+        result = Parser(self.logfile).parse_file(inprotdb, self.hmmsearch_out, self.minscore)
 
         #Put result in db and sequences in outfile
         passed_count = 0
@@ -52,8 +54,13 @@ class HMMSearch(Sieve):
         try:
             for sequence in result:
                 if self.classify_sequence(sequence):
-                    outdb.put(str(sequence['id']), json.dumps(sequence))
-                    outfile.write(fragment_to_fasta(sequence))
+                    id = str(sequence.pop('id', None))
+                    outprotdb.put(id, json.dumps(sequence))
+                    (dnaid, frame) = id.split('_')
+                    frame = int(frame)
+                    dna = indnadb.get(dnaid)
+                    outdnadb.put(dnaid, translator.frame_sequence(dna, frame))
+                    outfile.write(fragment_to_fasta(sequence, id))
                     passed_count += 1
         finally:
             self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))

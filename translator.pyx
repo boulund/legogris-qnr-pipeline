@@ -506,14 +506,32 @@ GT['G']['G']['B'] = 'G'
 GT['G']['G']['X'] = 'G'
 GT['G']['G']['N'] = 'G'
 
-#GT['C']['T'] = 'L'
-#GT['G']['T'] = 'V'
-#GT['T']['C'] = 'S'
-#GT['C']['C'] = 'P'
-#GT['A']['C'] = 'T'
-#GT['G']['C'] = 'A'
-#GT['C']['G'] = 'R'
-#GT['G']['G'] = 'G'
+cpdef char *frame_sequence(char *sequence, int frame):
+    cdef int i, j, k, l
+    l = len(sequence)
+    cdef char c
+    cdef char* dseq = <char *>calloc(l + 1, sizeof(char))
+    if frame > 2:
+        #Reverse and frame adjust
+        j = 0
+        for i in range(l+2-frame, -1, -1):
+            c = sequence[i]
+            if c != 10: #skip newline
+            #Complement
+                dseq[j] = _COMPLEMENTS[c]
+                j += 1
+        dseq[j] = 0
+    else:
+        #Performance gain no biggie here
+        j = 0
+        for i in range(frame, l):
+            c = sequence[i]
+            if c != 10:
+                dseq[j] = c
+                j += 1
+        dseq[j] = 0
+    return dseq
+
 
 #Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
 def translate_sequence(char *name, char *desc, char *sequence):
@@ -529,6 +547,7 @@ def translate_sequence(char *name, char *desc, char *sequence):
     cdef char* pseq = <char *>calloc(l/3 + 2, sizeof(char))
     #Local variables = less overhead
     result = []
+    id = uuid.UUID(int=random.getrandbits(128), version=4).hex
     for frame in range(0,6):
         #First 3 frames are normal, following 3 are reverse complements
         if frame > 2:
@@ -561,21 +580,17 @@ def translate_sequence(char *name, char *desc, char *sequence):
             j += 1
         protein = pseq
         #Faster but less secure (wrt collissions) than stock uuid4
-        id = uuid.UUID(int=random.getrandbits(128), version=4).hex
         seq = {
-            'id': id,
-            'dna': dna,
             'protein': protein,
             'name': name,
             'description': desc,
-            'frame': frame+1
+            'frame': frame+0
         }
-        out = ''.join(['>', id, '\n', protein, '\n'])
+        out = ''.join(['>', id, '_', str(frame), '\n', protein, '\n'])
         try:
-            #result.append((id, json.dumps(seq), out))
-            result.append((id, json.dumps(seq), out))
+            result.append((frame, json.dumps(seq), out))
         except:
             print("* dna: ", dna)
             print(seq)
             exit(1)
-    return result
+    return (id, result)

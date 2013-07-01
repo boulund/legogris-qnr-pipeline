@@ -118,10 +118,9 @@ def fixfastas(sequences):
     return outsequences
 ############## END fixfasta
 
-def fragment_to_fasta(fragment, sequence='protein', id='id'):
+def fragment_to_fasta(fragment, id, sequence='protein'):
     seq = (fragment['dna'] if sequence == 'dna' else fragment['protein'])
-    _id = fragment[id]
-    return fixfasta(''.join(['>', _id, '\n', seq, '\n']))
+    return fixfasta(''.join(['>', id, '\n', seq, '\n']))
 
 def parse_fasta(filename):
     sequences = []

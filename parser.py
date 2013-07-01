@@ -30,6 +30,7 @@ class Parser:
                 seq['score'] = score
                 seq['dscore'] = dscore
                 indb[id] = json.dumps(seq)
+                seq['id'] = id
                 sequences.append(seq)
 
             return sequences
