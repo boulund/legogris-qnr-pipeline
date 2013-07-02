@@ -3,6 +3,7 @@ from __future__ import print_function
 import types
 import sys
 import leveldb
+from datetime import datetime
 
 from translator import translate_sequence
 from sieve import Sieve
@@ -14,7 +15,7 @@ class FastaReader(Sieve):
     def init(self, params):
         self.outdbmode = True
         self.name = 'FASTA translator'
-        self.param_names = [('item_limit', 0)]
+        self.param_names = [('item_limit', 0), ('db_batch_size', 200000)]
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         infile = open(infilepath,'r')
@@ -36,11 +37,14 @@ class FastaReader(Sieve):
                         for (frame, dump, out) in seqs:
                             protbatch.Put(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
-                        if n % 500000 == 0:
+                        if n % self.db_batch_size == 0:
+                            flushstarttime = datetime.now()
+                            self.logfile.writeline("Flushing to disk at %s" % flushstarttime)
                             outdnadb.Write(dnabatch) #, sync=True
                             outprotdb.Write(protbatch) #, sync=True
                             dnabatch = leveldb.WriteBatch()
                             protbatch = leveldb.WriteBatch()
+                            self.logfile.writeline("Done flushing to disk: %s" % (datetime.now() - flushstarttime))
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
                 else:
