@@ -534,7 +534,7 @@ cpdef char *frame_sequence(char *sequence, int frame):
 
 
 #Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
-def translate_sequence(char *name, char *desc, char *sequence):
+def translate_sequence(char *id, char *name, char *desc, char *sequence):
     global GT
     cdef char x = ord('X')
     cdef int i, j, frame, k, l
@@ -547,7 +547,6 @@ def translate_sequence(char *name, char *desc, char *sequence):
     cdef char* pseq = <char *>calloc(l/3 + 2, sizeof(char))
     #Local variables = less overhead
     result = []
-    id = uuid.UUID(int=random.getrandbits(128), version=4).hex
     for frame in range(0,6):
         #First 3 frames are normal, following 3 are reverse complements
         if frame > 2:
@@ -593,4 +592,4 @@ def translate_sequence(char *name, char *desc, char *sequence):
             print("* dna: ", dna)
             print(seq)
             exit(1)
-    return (id, result)
+    return result

@@ -8,7 +8,7 @@ from sieve import run_sieves
 logfile = Logger('qnrsearch.log')
 logfile.open()
 
-_PROFILE = True
+_PROFILE = False
 def run():
     #inpath = 'tutorial/database/ntsmaller_plus_qnr.nfa'
     #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'

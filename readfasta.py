@@ -15,7 +15,7 @@ class FastaReader(Sieve):
     def init(self, params):
         self.outdbmode = True
         self.name = 'FASTA translator'
-        self.param_names = [('item_limit', 0), ('db_batch_size', 200000)]
+        self.param_names = [('item_limit', 0), ('db_batch_size', 100000)]
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         infile = open(infilepath,'r')
@@ -32,7 +32,8 @@ class FastaReader(Sieve):
                         break
                     if len(tempseq) > 0:
                         dna = ''.join(tempseq)
-                        (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
+                        id = str(n)
+                        seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
                         dnabatch.Put(id, dna)
                         for (frame, dump, out) in seqs:
                             protbatch.Put(''.join([id, '_', str(frame)]), dump)
@@ -51,14 +52,18 @@ class FastaReader(Sieve):
                     tempseq.append(line.rstrip())
             #When the file is finished: Save the final sequence just like the others
             dna = ''.join(tempseq)
-            (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
+            id = str(n)
+            seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
             dnabatch.Put(id, dna)
             for (frame, dump, out) in seqs:
                 protbatch.Put(''.join([id, '_', str(frame)]), dump)
                 outfile.write(out)
         finally:
+            flushstarttime = datetime.now()
+            self.logfile.writeline("Flushing to disk at %s" % flushstarttime)
             outdnadb.Write(dnabatch) #, sync=True
             outprotdb.Write(protbatch) #, sync=True
+            self.logfile.writeline("Done flushing to disk: %s" % (datetime.now() - flushstarttime))
             infile.close()
             outfile.close()
 

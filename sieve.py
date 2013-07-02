@@ -21,19 +21,13 @@ class Sieve(object):
             else:
                 setattr(self, param_name, default_value)
 
-def run_sieve(sieve, paths, logfile, dbenv):
+def run_sieve(sieve, paths, logfile):
     (indbpath, infilepath, outdbpath, outfilepath) = paths
     indnadb = inprotdb =  outdnadb =  outprotdb = None
     try:
         if hasattr(sieve, 'indbmode'):
-            indnadb = db.DB(dbenv)
-            inprotdb = db.DB(dbenv)
-            if sieve.indbflags:
-                indnadb.set_flags(sieve.indbflags)
-                inprotdb.set_flags(sieve.indbflags)
-            flag = getattr(sieve, 'indbaccess') if hasattr(sieve, 'indbaccess') else db.DB_RDONLY
-            indnadb.open(indbpath, dbname='dna', dbtype=sieve.indbmode, flags=flag | db.DB_THREAD )
-            inprotdb.open(indbpath, dbname='prot', dbtype=sieve.indbmode, flags=flag | db.DB_THREAD )
+            outdnadb = leveldb.LevelDB(outdbpath+'.dna', write_buffer_size=256*(2 << 19))
+            outprotdb = leveldb.LevelDB(outdbpath+'.prot', write_buffer_size=1024*(2 << 19))
         if hasattr(sieve, 'outdbmode'):
             outdnadb = leveldb.LevelDB(outdbpath+'.dna')
             outprotdb = leveldb.LevelDB(outdbpath+'.prot')
@@ -51,18 +45,17 @@ def run_sieve(sieve, paths, logfile, dbenv):
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         logfile.flush()
 
-def _run_sieves(sieves, dbs, files, logfile, dbenv, startindex=0, endindex=-1):
+def _run_sieves(sieves, dbs, files, logfile, startindex=0, endindex=-1):
     if endindex == -1:
         endindex = len(sieves)
     for i in xrange(startindex, endindex):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
             sieve = s.create(params, logfile)
-            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbenv)
+            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile)
         elif isinstance(sieves[i], list):
             for s in sieves[i]:
-                return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile, dbenv)
+                return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile)
 
 def run_sieves(sieves, dbs, files, logfile, dbpath, startindex=0, endindex=-1):
-    dbenv = None
-    _run_sieves(sieves, dbs, files, logfile, dbenv, startindex, endindex)
+    _run_sieves(sieves, dbs, files, logfile, startindex, endindex)
