@@ -26,15 +26,15 @@ def run_sieve(sieve, paths, logfile):
     indnadb = inprotdb =  outdnadb =  outprotdb = None
     try:
         if hasattr(sieve, 'indbmode'):
-            outdnadb = leveldb.LevelDB(outdbpath+'.dna', write_buffer_size=1024*(2 << 19))
-            outprotdb = leveldb.LevelDB(outdbpath+'.prot', write_buffer_size=4*1024*(2 << 19))
+            pass
         if hasattr(sieve, 'outdbmode'):
             outdnadb = DB()
             outprotdb = DB()
-            if not outdnadb.open(outdbpath+'.dna', DB.OWRITER | DB.OCREATE):
+            dbparams = '.kct#apow=0#bnum=10000000#msiz='+str(2<<30)
+            if not outdnadb.open(outdbpath+'.dna'+dbparams, DB.OWRITER | DB.OCREATE | DB.OTRUNCATE):
                 logfile.writeline('DNA outdb open error: %s ' % outdnadb.error())
                 exit(1)
-            if not outprotdb.open(outdbpath+'.prot', DB.OWRITER | DB.OCREATE):
+            if not outprotdb.open(outdbpath+'.prot'+dbparams, DB.OWRITER | DB.OCREATE | DB.OTRUNCATE):
                 logfile.writeline('Protein outdb open error: %s ' % outprotdb.error())
                 exit(1)
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))

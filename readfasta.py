@@ -2,7 +2,6 @@
 from __future__ import print_function
 import types
 import sys
-import leveldb
 from datetime import datetime
 
 from translator import translate_sequence
