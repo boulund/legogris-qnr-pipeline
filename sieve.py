@@ -1,7 +1,7 @@
 #!/bin/python
 from __future__ import print_function
 
-import leveldb
+from kyotocabinet import DB
 import time
 
 class Sieve(object):
@@ -29,8 +29,14 @@ def run_sieve(sieve, paths, logfile):
             outdnadb = leveldb.LevelDB(outdbpath+'.dna', write_buffer_size=1024*(2 << 19))
             outprotdb = leveldb.LevelDB(outdbpath+'.prot', write_buffer_size=4*1024*(2 << 19))
         if hasattr(sieve, 'outdbmode'):
-            outdnadb = leveldb.LevelDB(outdbpath+'.dna')
-            outprotdb = leveldb.LevelDB(outdbpath+'.prot')
+            outdnadb = DB()
+            outprotdb = DB()
+            if not outdnadb.open(outdbpath+'.dna', DB.OWRITER | DB.OCREATE):
+                logfile.writeline('DNA outdb open error: %s ' % outdnadb.error())
+                exit(1)
+            if not outprotdb.open(outdbpath+'.prot', DB.OWRITER | DB.OCREATE):
+                logfile.writeline('Protein outdb open error: %s ' % outprotdb.error())
+                exit(1)
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         return sieve.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
     finally:
@@ -39,9 +45,9 @@ def run_sieve(sieve, paths, logfile):
         if not inprotdb is None:
             del inprotdb
         if not outdnadb is None:
-            del outdnadb
+            outdnadb.close()
         if not outprotdb is None:
-            del outprotdb
+            outprotdb.close()
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         logfile.flush()
 

@@ -20,8 +20,6 @@ class FastaReader(Sieve):
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         infile = open(infilepath,'r')
         outfile = open(outfilepath, 'w')
-        dnabatch = leveldb.WriteBatch()
-        protbatch = leveldb.WriteBatch()
         try:
             n = 0
             tempseq = []
@@ -34,20 +32,10 @@ class FastaReader(Sieve):
                         dna = ''.join(tempseq)
                         id = str(n)
                         seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
-                        dnabatch.Put(id, dna)
+                        outdnadb.set(id, dna)
                         for (frame, dump, out) in seqs:
-                            protbatch.Put(''.join([id, '_', str(frame)]), dump)
+                            outprotdb.set(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
-                        if n % self.db_batch_size == 0:
-                            flushstarttime = datetime.now()
-                            self.logfile.writeline("Flushing to disk at %s" % flushstarttime)
-                            outdnadb.Write(dnabatch) #, sync=True
-                            outprotdb.Write(protbatch) #, sync=True
-                            dnabatch = leveldb.WriteBatch()
-                            protbatch = leveldb.WriteBatch()
-                            self.logfile.writeline("Done flushing to disk: %s" % (datetime.now() - flushstarttime))
-                            self.logfile.writeline(outdnadb.GetStats())
-                            self.logfile.writeline(outprotdb.GetStats())
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
                 else:
@@ -56,18 +44,11 @@ class FastaReader(Sieve):
             dna = ''.join(tempseq)
             id = str(n)
             seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
-            dnabatch.Put(id, dna)
+            outdnadb.set(id, dna)
             for (frame, dump, out) in seqs:
-                protbatch.Put(''.join([id, '_', str(frame)]), dump)
+                outprotdb.set(''.join([id, '_', str(frame)]), dump)
                 outfile.write(out)
         finally:
-            flushstarttime = datetime.now()
-            self.logfile.writeline("Flushing to disk at %s" % flushstarttime)
-            outdnadb.Write(dnabatch) #, sync=True
-            outprotdb.Write(protbatch) #, sync=True
-            self.logfile.writeline("Done flushing to disk: %s" % (datetime.now() - flushstarttime))
-            self.logfile.writeline(outdnadb.GetStats())
-            self.logfile.writeline(outprotdb.GetStats())
             infile.close()
             outfile.close()
 
