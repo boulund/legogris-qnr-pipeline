@@ -22,23 +22,25 @@ class FastaReader(Sieve):
         dnabatch = leveldb.WriteBatch()
         protbatch = leveldb.WriteBatch()
         try:
-            n = m = 0
+            n = 0
             tempseq = []
             for line in infile:
                 if line.startswith('>'):
                     n += 1
-                    m += 1
                     if self.item_limit and n > self.item_limit:
                         break
                     if len(tempseq) > 0:
                         dna = ''.join(tempseq)
                         (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
-                        outdnadb.Put(id, dna)
+                        dnabatch.Put(id, dna)
                         for (frame, dump, out) in seqs:
                             protbatch.Put(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
-                        outprotdb.Write(protbatch) #, sync=True
-                        protbatch = leveldb.WriteBatch()
+                        if n % 500000 == 0:
+                            outdnadb.Write(dnabatch) #, sync=True
+                            outprotdb.Write(protbatch) #, sync=True
+                            dnabatch = leveldb.WriteBatch()
+                            protbatch = leveldb.WriteBatch()
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
                 else:
@@ -46,13 +48,13 @@ class FastaReader(Sieve):
             #When the file is finished: Save the final sequence just like the others
             dna = ''.join(tempseq)
             (id, seqs) = translate_sequence(seqid, seqdesc.lstrip(), dna)
-            outdnadb.Put(id, dna)
+            dnabatch.Put(id, dna)
             for (frame, dump, out) in seqs:
                 protbatch.Put(''.join([id, '_', str(frame)]), dump)
                 outfile.write(out)
-            outprotdb.Write(protbatch) #, sync=True
         finally:
-            #outdnadb.Write(dnabatch) #, sync=True
+            outdnadb.Write(dnabatch) #, sync=True
+            outprotdb.Write(protbatch) #, sync=True
             infile.close()
             outfile.close()
 

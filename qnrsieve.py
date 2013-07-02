@@ -11,8 +11,8 @@ logfile.open()
 _PROFILE = True
 def run():
     #inpath = 'tutorial/database/ntsmaller_plus_qnr.nfa'
-    #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
-    inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
+    inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
+    #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
 
     try:
         run_sieves(
