@@ -46,6 +46,8 @@ class FastaReader(Sieve):
                             dnabatch = leveldb.WriteBatch()
                             protbatch = leveldb.WriteBatch()
                             self.logfile.writeline("Done flushing to disk: %s" % (datetime.now() - flushstarttime))
+                            self.logfile.writeline(outdnadb.GetStats())
+                            self.logfile.writeline(outprotdb.GetStats())
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
                 else:
@@ -64,6 +66,8 @@ class FastaReader(Sieve):
             outdnadb.Write(dnabatch) #, sync=True
             outprotdb.Write(protbatch) #, sync=True
             self.logfile.writeline("Done flushing to disk: %s" % (datetime.now() - flushstarttime))
+            self.logfile.writeline(outdnadb.GetStats())
+            self.logfile.writeline(outprotdb.GetStats())
             infile.close()
             outfile.close()
 

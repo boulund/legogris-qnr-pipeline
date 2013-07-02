@@ -26,8 +26,8 @@ def run_sieve(sieve, paths, logfile):
     indnadb = inprotdb =  outdnadb =  outprotdb = None
     try:
         if hasattr(sieve, 'indbmode'):
-            outdnadb = leveldb.LevelDB(outdbpath+'.dna', write_buffer_size=256*(2 << 19))
-            outprotdb = leveldb.LevelDB(outdbpath+'.prot', write_buffer_size=1024*(2 << 19))
+            outdnadb = leveldb.LevelDB(outdbpath+'.dna', write_buffer_size=1024*(2 << 19))
+            outprotdb = leveldb.LevelDB(outdbpath+'.prot', write_buffer_size=4*1024*(2 << 19))
         if hasattr(sieve, 'outdbmode'):
             outdnadb = leveldb.LevelDB(outdbpath+'.dna')
             outprotdb = leveldb.LevelDB(outdbpath+'.prot')
