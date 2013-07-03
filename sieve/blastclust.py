@@ -82,14 +82,13 @@ class BLASTClusterer(Sieve):
             clusterout = open(self.clusters_out_path,"w")
         if self.clusters_with_scores_out_path:
             withscores = open(self.clusters_with_scores_out_path,"w")
-        outprotdb.truncate()
         try:
             for cluster in clusters:
                 cid = uuid.uuid4().hex
                 for seqID in cluster:
                     outprotdb.put(cid, seqID)
                     if clusterout or withscores:
-                        seq = json.loads(inprotdb[seqID])
+                        seq = json.loads(inprotdb.get(seqID))
                         if clusterout:
                             clusterout.write(''.join([seq['name'],' ']))
                         if withscores:

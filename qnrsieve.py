@@ -25,7 +25,7 @@ def run():
             logfile,
             level,
             #kyoto,
-            0,2
+            0,3
         )
     finally:
         logfile.close()
