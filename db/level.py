@@ -4,7 +4,7 @@ def open(path, truncate=False, sync=False):
     return (LDB(path+'.dna', truncate, sync), LDB(path+'.prot', truncate, sync))
 
 class LDB:
-    def __init__(self, path, truncate=False, sync=False):
+    def __init__(self, path, truncate=False, sync=True):
         self.batchsize = 1000
         self.batchcount = 0
         self.sync = sync
@@ -25,4 +25,5 @@ class LDB:
         self.batch = leveldb.WriteBatch()
 
     def close(self):
+        self.flush()
         del self.db

@@ -31,4 +31,5 @@ class KDB:
         self.batch = {}
 
     def close(self):
+        self.flush()
         del self.db
