@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from logger import Logger
+from util.logger import Logger
 from sieve import run_sieves, readfasta, hmmsearch, blastclust
 from db import level
 
