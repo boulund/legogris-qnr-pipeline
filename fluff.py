@@ -66,7 +66,6 @@ def count_nucleotides_from_hmmsearch(hmmsearchfiles):
     return total_residues
 ############## END count_nucleotides_from_hmmsearch
 
-
 ##-----------------------------------------------##
 ## MULTIPLE ALIGNMENT WITHIN AND BETWEEN CLUSTERS##
 ##-----------------------------------------------##
@@ -113,32 +112,11 @@ def malign_clusters(clusters,resdir,refseqpath,seqfilepath):
     import shlex, subprocess
 
 
+    clusterno = 0
     # USER EDITABLE LIST WITH REFERENCE GENES
     references = ["QnrA","QnrB","QnrC","QnrD","QnrS"] # Can be modified!
 
-
-
-    # Read the file with sequences, fixed filename
-    # Each element in the list is a sequence
-    sequences = []
-    tempseqid = ""
-    tempseq = ""
-    try:
-        seqfile = open(seqfilepath,'r')
-        for line in seqfile:
-            if line.startswith(">"):
-                sequences.append(''.join([tempseqid,tempseq]))
-                tempseqid = line
-                tempseq = ""
-            elif not line.startswith(">"):
-                tempseq = ''.join([tempseq,line])
-        sequences.append(''.join([tempseqid,tempseq]))
-    except OSError:
-        raise PathError(''.join(["Could not open/find ",seqfilepath]))
-
-
-    clusterno = 0
-    for cluster in clusters:
+    for cluster in clusters.values():
         # Perform multiple alignment within cluster if there are
         # more than one members in cluster
         if len(cluster) > 1:
@@ -148,12 +126,9 @@ def malign_clusters(clusters,resdir,refseqpath,seqfilepath):
                                                  str(clusterno)]))
             malignfile = open(malignfilepath,"w")
 
-
             # Find sequences for all sequence IDs in cluster and write to file
-            for seqid in cluster:
-                for sequence in sequences:
-                    if seqid in sequence:
-                        malignfile.write(sequence)
+            for fragment in cluster:
+                malignfile.write(fragment_to_fasta(fragment, id='name'))
             malignfile.close()
 
             # Set parameters etc for clustalw and make alignment
@@ -187,21 +162,8 @@ def malign_clusters(clusters,resdir,refseqpath,seqfilepath):
     if refseqpath is not "":
         # Read the reference sequences from the path specified
         # Each element in the list is a complete sequence
-        refsequences = []
-        tempseqid = ""
-        tempseq = ""
-        try:
-            seqfile = open(refseqpath,'r')
-            for line in seqfile:
-                if line.startswith(">"):
-                    refsequences.append(''.join([tempseqid,tempseq]))
-                    tempseqid = line
-                    tempseq = ""
-                elif not line.startswith(">"):
-                    tempseq = ''.join([tempseq,line])
-            refsequences.append(''.join([tempseqid,tempseq]))
-        except OSError:
-            raise PathError(''.join(["ERROR: cannot open", refseqpath]))
+        refsequences = parse_fasta(refseqpath)
+
 
 
         # Perform multiple alignment against all reference plasmid mediated qnr-genes

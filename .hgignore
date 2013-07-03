@@ -2,3 +2,12 @@ hmm
 tutorial
 search
 .*\.pyc
+.*\.db
+.*\.so
+.*\.o
+.*\.c
+.*\.pfa
+.*\.nfa
+.*\.log
+build
+

@@ -29,12 +29,16 @@ import time
 import pickle
 import shlex, subprocess
 from optparse import OptionParser, OptionGroup
+import json
+import uuid
 
 import fluff
 from hmmsearch import HMMSearch
 from parser import Parser
 from logger import Logger
 from blastclust import BLASTClusterer
+import readfasta
+import berkeley
 
 ver = "QNR-search pipeline, version 0.8067 BETA" # 2012-07-20
 fill_length = int(floor((78-len(ver))/2))
@@ -326,14 +330,18 @@ logfile.line()
     ##---------------------------------------------------------------------------##
 
 if options.hmmsearch:
+    files = []
+    for fastafile in args:
+        files.append(readfasta.translate_fasta(fastafile, path.splitext(fastafile)[0]+'.pfa'))
+
     hmms = HMMSearch(logfile)
     args = hmms.search(
                 path.abspath(options.model), # Retrieve the path to the model from user set variables above
                 options.hmmsearch_outdir,
                 options.numcpu,
-                True,
+                False,
                 options.noheuristics,
-                args)
+                files)
     # Note the change in usage of variable 'args'! It now contains the hmmsearch outputfile paths
 else:
     logfile.write("Not running hmmsearch\n")
@@ -393,7 +401,7 @@ if options.blastclust:
             system(append_refseq)
             logfile.write("Added reference sequences from "+options.addrefseq+" to set to cluster\n")
 
-    clusters, parsedblastclust, scores_ids = aligner.run(RETR_SEQ_FILEPATH, options.numcpu, options.percent_identity, options.cov_threshold)
+    clusters = aligner.run(RETR_SEQ_FILEPATH, options.numcpu, options.percent_identity, options.cov_threshold)
 
 
     # Output the identified cluster to files,
@@ -403,31 +411,32 @@ if options.blastclust:
     logfile.write("The identified clusters are written to: "+clusterfilename+"\n")
     clusterout = open(clusterfilename,"w")
     withscores = open(withscoresfilename,"w")
-    for cluster in clusters:
-        for seqID in cluster:
-            clusterout.write(''.join([seqID," "]))
-            for database in scores_ids:
-                for info in database:
-                    seqscore, domscore, seqid = info
-                    if seqid in seqID:
-                        withscores.write(''.join([seqID,"--",
-                                         str(seqscore),"--",str(domscore),' ']))
-        clusterout.write("\n")
-        withscores.write("\n")
-    clusterout.close()
-    withscores.close()
+    db = berkeley.open_fragments()
+    cdb = berkeley.open_clusters()
+    cdb.truncate()
+    try:
+        for cluster in clusters:
+            cid = uuid.uuid4().hex
+            for seqID in cluster:
+                cdb.put(cid, seqID)
+                seq = json.loads(db[seqID])
+                clusterout.write(''.join([seq['name']," "]))
+                withscores.write(''.join([seq['name'],"--",
+                                str(seq['score']),"--",str(seq['dscore']),' ']))
+            clusterout.write("\n")
+            withscores.write("\n")
+    finally:
+        clusterout.close()
+        withscores.close()
+        db.close()
+        cdb.close()
 
     t = time.asctime(time.localtime())
+    logfile.write("Found " + str(len(clusters)) + " clusters")
     logfile.write("Finished clustering sequences at: "+t+"\n")
     logfile.line()
     logfile.flush()
 
-    # pickle the clusters and scores_ids for others scripts to use as a convenience
-    data = (parsedblastclust,scores_ids)
-    pickle_filename = ''.join([TMPDIR,"pickled.clusters"])
-    outpickle = open(pickle_filename,'wb')
-    pickle.dump(data,outpickle)
-    outpickle.close()
 else:
     logfile.write("Not clustering sequences\n")
     logfile.line()
@@ -459,6 +468,17 @@ if options.alignment:
 
     # Unpickle parsedblastclust (needed for being able to run alignment separately)
     # Really unnecessary to do every time but does not really matter
+    clusters = {}
+    cdb = berkeley.open_clusters()
+    fdb = berkeley.open_fragments()
+    try:
+        for (cid, fid) in cdb.items():
+            if not cid in clusters:
+                clusters[cid] = []
+            clusters[cid].append(json.loads(fdb[fid]))
+    finally:
+        fdb.close()
+        cdb.close()
     try:
         parsedblastclust, scores_ids = pickle.load(open(''.join([TMPDIR,"pickled.clusters"]),'rb'))
     except IOError:
@@ -480,7 +500,7 @@ if options.alignment:
 
             # Check that the reference sequence path is valid
             if path.isfile(QNR_REFERENCE_SEQUENCES_PATH):
-                retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
+                retcode = fluff.malign_clusters(clusters, RESDIR,
                                                 QNR_REFERENCE_SEQUENCES_PATH,
                                                 TMPDIR)
             else:
@@ -504,7 +524,7 @@ if options.alignment:
             logfile.flush()
 
             # Align the clusters
-            retcode = fluff.malign_clusters(parsedblastclust, RESDIR,
+            retcode = fluff.malign_clusters(clusters, RESDIR,
                                             refseqpath="",
                                             seqfilepath=RETR_SEQ_FILEPATH+'.shortened.unique')
             if retcode == 1:
