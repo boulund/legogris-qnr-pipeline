@@ -25,10 +25,10 @@ class Parser:
             score_id_tuples, dbpath = parsed # Unpack parsed information
             scores,dscores,ids = zip(*score_id_tuples) # Unzip the scores/IDs
             for (score, dscore, id) in score_id_tuples:
-                seq = json.loads(indb[id])
+                seq = json.loads(indb.get(id))
                 seq['score'] = score
                 seq['dscore'] = dscore
-                indb[id] = json.dumps(seq)
+                indb.put(id, json.dumps(seq))
                 seq['id'] = id
                 sequences.append(seq)
 

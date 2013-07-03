@@ -18,6 +18,9 @@ class KDB:
             raise PathError('DNA outdb open error: %s ' % self.db.error())
             exit(1)
 
+    def get(self, key):
+        return self.db.get(key)
+
     def put(self, key, val):
         self.batch[key] = val
         if len(self.batch) >= self.batchsize:

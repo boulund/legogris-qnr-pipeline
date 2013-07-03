@@ -32,7 +32,7 @@ def run_sieve(sieve, paths, logfile, dbengine):
         return sieve.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
     finally:
         if not indnadb is None:
-            indandb.close()
+            indnadb.close()
         if not inprotdb is None:
             inprotdb.close()
         if not outdnadb is None:

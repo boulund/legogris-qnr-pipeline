@@ -11,6 +11,9 @@ class LDB:
         self.batch = leveldb.WriteBatch()
         self.db = leveldb.LevelDB(path, write_buffer_size=1024*(2 << 19))
 
+    def get(self, key):
+        return self.db.Get(key)
+
     def put(self, key, val):
         self.batch.Put(key, val)
         self.batchcount += 1

@@ -1,3 +1,20 @@
+def fixfasta(sequence):
+
+    from math import ceil
+
+    splitstring = sequence.split("\n",1)
+    number_of_rows = int(ceil(len(splitstring[1]) / 80.0))
+    seq = []
+    if number_of_rows > 1:
+        for row in xrange(1,number_of_rows):
+            seq.append(splitstring[1][:80] + "\n")
+            splitstring[1] = splitstring[1][80:]
+        seq.append(splitstring[1]) # + "\n")
+        seq.insert(0,splitstring[0] + "\n")
+        return ''.join(seq)
+    else:
+        return sequence
+
 ##-----------------------------------------------##
 ##            FIX FASTA FORMATTING               ##
 ##-----------------------------------------------##
@@ -5,9 +22,6 @@ def fixfastas(sequences):
     '''
     Takes a list of sequences and tries to correct their
     formatting.
-
-    Designed to be used only in the
-    the function retrieve_sequences_from_hmmsearch.
 
     Input::
 
