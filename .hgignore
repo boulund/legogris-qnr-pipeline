@@ -8,5 +8,6 @@ search
 .*\.c
 .*\.pfa
 .*\.nfa
+.*\.log
 build
 

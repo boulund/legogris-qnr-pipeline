@@ -1,2 +1,2 @@
 #!/bin/sh
-python setup.py build_ext --inplace
+python util/setup.py build_ext --inplace

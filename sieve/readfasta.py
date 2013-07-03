@@ -14,7 +14,7 @@ class FastaReader(Sieve):
     def init(self, params):
         self.outdbmode = True
         self.name = 'FASTA translator'
-        self.param_names = [('item_limit', 0), ('db_batch_size', 1000)]
+        self.param_names = [('item_limit', 0)]
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         infile = open(infilepath,'r')
@@ -33,15 +33,10 @@ class FastaReader(Sieve):
                         dna = ''.join(tempseq)
                         id = str(n)
                         seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
-                        dnas[id] = dna
+                        outdnadb.put(id, dna)
                         for (frame, dump, out) in seqs:
-                            prots[''.join([id, '_', str(frame)])] = dump
+                            outprotdb.put(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
-                        if n % self.db_batch_size == 0:
-                            outdnadb.set_bulk(dnas)
-                            outprotdb.set_bulk(prots)
-                            dnas = {}
-                            prots = {}
 
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
@@ -51,9 +46,9 @@ class FastaReader(Sieve):
             dna = ''.join(tempseq)
             id = str(n)
             seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
-            outdnadb.set(id, dna)
+            outdnadb.put(id, dna)
             for (frame, dump, out) in seqs:
-                outprotdb.set(''.join([id, '_', str(frame)]), dump)
+                outprotdb.put(''.join([id, '_', str(frame)]), dump)
                 outfile.write(out)
         finally:
             infile.close()

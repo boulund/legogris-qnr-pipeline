@@ -10,7 +10,7 @@ from bsddb3 import db
 import translator
 from sieve import Sieve
 from parser import Parser
-from fluff import fragment_to_fasta
+from util import fragment_to_fasta
 
 def create(params, logfile):
     return HMMSearch(params, logfile)

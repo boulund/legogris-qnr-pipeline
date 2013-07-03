@@ -1,9 +1,7 @@
 #!/usr/bin/python
 from logger import Logger
-import readfasta
-import hmmsearch
-import blastclust
-from sieve import run_sieves
+from sieve import run_sieves, readfasta, hmmsearch, blastclust
+from db import level
 
 logfile = Logger('qnrsearch.log')
 logfile.open()
@@ -11,8 +9,9 @@ logfile.open()
 _PROFILE = False
 def run():
     #inpath = 'tutorial/database/ntsmaller_plus_qnr.nfa'
-    #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
-    inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
+    inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
+    #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
+    #inpath = 'tutorial/database/nt_plus_7_qnr.nfa'
 
     try:
         run_sieves(
@@ -22,9 +21,9 @@ def run():
                 (blastclust, {'blastclust_out': 'tutorial/blastclust_out', 'clusters_out_path': 'tutorial/identified_clusters', 'clusters_with_scores_out_path': 'tutorial/identified_clusters.scores'})
             ],     #sieves
             ['', 'tutorial/fragments.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
-            [inpath, 'tutorial/fragments.pfa', 'tutorial/fragments_passed.pfa', 'tutorial/blastclust_in.pfa'],   #files
+            [inpath, 'tutorial/readfasta.pfa', 'tutorial/fragments_passed.pfa', 'tutorial/blastclust_in.pfa'],   #files
             logfile,
-            'tutorial/db',
+            level,
             0,1
         )
     finally:

@@ -1,7 +1,6 @@
 #!/bin/python
 from __future__ import print_function
 
-from kyotocabinet import DB
 import time
 
 class Sieve(object):
@@ -21,29 +20,21 @@ class Sieve(object):
             else:
                 setattr(self, param_name, default_value)
 
-def run_sieve(sieve, paths, logfile):
+def run_sieve(sieve, paths, logfile, dbengine):
     (indbpath, infilepath, outdbpath, outfilepath) = paths
     indnadb = inprotdb =  outdnadb =  outprotdb = None
     try:
         if hasattr(sieve, 'indbmode'):
-            pass
+            (indnadb, inprotdb) = dbengine.open(indbpath, truncate=False)
         if hasattr(sieve, 'outdbmode'):
-            outdnadb = DB()
-            outprotdb = DB()
-            dbparams = '.kct#apow=0#bnum=10000000#msiz='+str(2<<30)
-            if not outdnadb.open(outdbpath+'.dna'+dbparams, DB.OWRITER | DB.OCREATE | DB.OTRUNCATE):
-                logfile.writeline('DNA outdb open error: %s ' % outdnadb.error())
-                exit(1)
-            if not outprotdb.open(outdbpath+'.prot'+dbparams, DB.OWRITER | DB.OCREATE | DB.OTRUNCATE):
-                logfile.writeline('Protein outdb open error: %s ' % outprotdb.error())
-                exit(1)
+            (outdnadb, outprotdb) = dbengine.open(outdbpath, truncate=True)
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         return sieve.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
     finally:
         if not indnadb is None:
-            del indandb
+            indandb.close()
         if not inprotdb is None:
-            del inprotdb
+            inprotdb.close()
         if not outdnadb is None:
             outdnadb.close()
         if not outprotdb is None:
@@ -51,17 +42,17 @@ def run_sieve(sieve, paths, logfile):
         logfile.writeline('Finish: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         logfile.flush()
 
-def _run_sieves(sieves, dbs, files, logfile, startindex=0, endindex=-1):
+def _run_sieves(sieves, dbs, files, logfile, dbengine, startindex=0, endindex=-1):
     if endindex == -1:
         endindex = len(sieves)
     for i in xrange(startindex, endindex):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
             sieve = s.create(params, logfile)
-            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile)
+            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbengine)
         elif isinstance(sieves[i], list):
             for s in sieves[i]:
-                return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile)
+                return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile, dbengine)
 
-def run_sieves(sieves, dbs, files, logfile, dbpath, startindex=0, endindex=-1):
-    _run_sieves(sieves, dbs, files, logfile, startindex, endindex)
+def run_sieves(sieves, dbs, files, logfile, dbengine, startindex=0, endindex=-1):
+    _run_sieves(sieves, dbs, files, logfile, dbengine, startindex, endindex)
