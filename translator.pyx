@@ -2,7 +2,10 @@ import uuid
 import json
 import random
 from collections import defaultdict
+from cpython.ref cimport PyObject
 #---------------------------------------------------------------------------
+cdef extern from "Python.h":
+    PyObject* PyString_FromString(char *v)
 cdef extern from "stdlib.h":
   ctypedef unsigned int size_t
   size_t strlen(char *s)
@@ -506,49 +509,12 @@ GT['G']['G']['B'] = 'G'
 GT['G']['G']['X'] = 'G'
 GT['G']['G']['N'] = 'G'
 
-cpdef char *frame_sequence(char *sequence, int frame):
+cpdef bytes frame_sequence(char *sequence, int frame):
     cdef int i, j, k, l
     l = len(sequence)
     cdef char c
     cdef char* dseq = <char *>calloc(l + 1, sizeof(char))
-    if frame > 2:
-        #Reverse and frame adjust
-        j = 0
-        for i in range(l+2-frame, -1, -1):
-            c = sequence[i]
-            if c != 10: #skip newline
-            #Complement
-                dseq[j] = _COMPLEMENTS[c]
-                j += 1
-        dseq[j] = 0
-    else:
-        #Performance gain no biggie here
-        j = 0
-        for i in range(frame, l):
-            c = sequence[i]
-            if c != 10:
-                dseq[j] = c
-                j += 1
-        dseq[j] = 0
-    return dseq
-
-
-#Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
-def translate_sequence(char *id, char *name, char *desc, char *sequence):
-    global GT
-    cdef char x = ord('X')
-    cdef int i, j, frame, k, l
-    cdef char *dna
-    cdef char *protein
-    cdef char c
-    cdef char* s = NULL
-    l = len(sequence)
-    cdef char* dseq = <char *>calloc(l + 1, sizeof(char))
-    cdef char* pseq = <char *>calloc(l/3 + 2, sizeof(char))
-    #Local variables = less overhead
-    result = []
-    for frame in range(0,6):
-        #First 3 frames are normal, following 3 are reverse complements
+    try:
         if frame > 2:
             #Reverse and frame adjust
             j = 0
@@ -568,28 +534,74 @@ def translate_sequence(char *id, char *name, char *desc, char *sequence):
                     dseq[j] = c
                     j += 1
             dseq[j] = 0
-        dna  = dseq
-        #Translate dna codons to protein
-        j = 0
-        k = len(dna)
-        for i in range(0, k-1, 3):
-            c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != k-2 else x ]
-            #print(chr(dna[i]), chr(dna[i+1]), chr(dna[i+2]), c)
-            pseq[j] = c
-            j += 1
-        protein = pseq
-        #Faster but less secure (wrt collissions) than stock uuid4
-        seq = {
-            'protein': protein,
-            'name': name,
-            'description': desc,
-            'frame': frame+0
-        }
-        out = ''.join(['>', id, '_', str(frame), '\n', protein, '\n'])
-        try:
-            result.append((frame, json.dumps(seq), out))
-        except:
-            print("* dna: ", dna)
-            print(seq)
-            exit(1)
+        return dseq
+    finally:
+        free(dseq)
+
+
+#Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
+def translate_sequence(char *id, char *name, char *desc, char *sequence):
+    global GT
+    cdef char x = ord('X')
+    cdef int i, j, frame, k, l
+    cdef char *dna
+    cdef char *protein
+    cdef char c
+    cdef char* s = NULL
+    l = len(sequence)
+    cdef char* dseq = <char *>calloc(l + 1, sizeof(char))
+    cdef char* pseq = <char *>calloc(l/3 + 2, sizeof(char))
+    if not dseq or not pseq:
+        raise MemoryError()
+    #Local variables = less overhead
+    try:
+        result = []
+        for frame in range(0,6):
+            #First 3 frames are normal, following 3 are reverse complements
+            if frame > 2:
+                #Reverse and frame adjust
+                j = 0
+                for i in range(l+2-frame, -1, -1):
+                    c = sequence[i]
+                    if c != 10: #skip newline
+                    #Complement
+                        dseq[j] = _COMPLEMENTS[c]
+                        j += 1
+                dseq[j] = 0
+            else:
+                #Performance gain no biggie here
+                j = 0
+                for i in range(frame, l):
+                    c = sequence[i]
+                    if c != 10:
+                        dseq[j] = c
+                        j += 1
+                dseq[j] = 0
+            dna  = dseq
+            #Translate dna codons to protein
+            j = 0
+            k = len(dna)
+            for i in range(0, k-1, 3):
+                c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != k-2 else x ]
+                #print(chr(dna[i]), chr(dna[i+1]), chr(dna[i+2]), c)
+                pseq[j] = c
+                j += 1
+            protein = pseq
+            #Faster but less secure (wrt collissions) than stock uuid4
+            seq = {
+                'protein': protein,
+                'name': name,
+                'description': desc,
+                'frame': frame+0
+            }
+            out = ''.join(['>', id, '_', str(frame), '\n', protein, '\n'])
+            try:
+                result.append((frame, json.dumps(seq), out))
+            except:
+                print("* dna: ", dna)
+                print(seq)
+                exit(1)
+    finally:
+        free(dseq)
+        free(pseq)
     return result
