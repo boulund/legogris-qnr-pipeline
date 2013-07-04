@@ -6,7 +6,7 @@ from db import kyoto, level
 logfile = Logger('qnrsearch.log')
 logfile.open()
 
-_PROFILE = False
+_PROFILE = True
 def run():
     #inpath = 'tutorial/database/ntsmaller_plus_qnr.nfa'
     inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'

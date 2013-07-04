@@ -2,10 +2,10 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-ext_modules = [Extension("translator", ["translator.pyx"])]
+ext_modules = [Extension("translator", ["util/translator.pyx"])]
 
 setup(
-  name = 'Hello world app',
+  name = 'FASTA translator',
   cmdclass = {'build_ext': build_ext},
   ext_modules = ext_modules
 )

@@ -6,8 +6,7 @@ from bsddb3 import db
 import uuid
 
 from sieve import Sieve
-from fluff import PathError, cleanup
-import fluff
+from util import PathError
 
 def create(params, logfile):
     return BLASTClusterer(params, logfile)
@@ -34,12 +33,6 @@ class BLASTClusterer(Sieve):
     #TODO: Ensure blastclust gets maximum 64 lines of FASTA (64*80 columns)
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         logfile = self.logfile
-
-        # Run formatdb on the file outputted from uniqueify_seqids and
-        # then run blastclust to cluster results (all in one function)
-        t = time.asctime(time.localtime())
-        logfile.writeline("Running blastclust at: "+t)
-        logfile.flush()
 
         if self.reference_sequence_path and path.isfile(self.reference_sequence_path):
             system('cat %s >> %s' % (self.reference_sequence_path, infilepath))
@@ -68,11 +61,9 @@ class BLASTClusterer(Sieve):
             clusters = self.parse_blastclust(blastclustoutputfile)
         except PathError, e:
             logfile.write(e.message+"\n"+blastclustoutputfile+"\n")
-            cleanup(TMPDIR)
             exit(1)
         except ValueError:
             logfile.write("ERROR: Found nothing in blastclust output: "+blastclustoutputfile+"\n")
-            cleanup(TMPDIR)
             exit(1)
 
         # Output the identified cluster to files,

@@ -20,6 +20,9 @@ class LDB:
         if self.batchcount >= self.batchsize:
             self.flush()
 
+    def __iter__(self):
+        return self.db.RangeIter()
+
     def flush(self):
         self.db.Write(self.batch, sync=self.sync)
         self.batch = leveldb.WriteBatch()
