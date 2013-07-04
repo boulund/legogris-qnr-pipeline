@@ -9,7 +9,7 @@ from bsddb3 import db
 
 import translator
 from sieve import Sieve
-from parser import Parser
+from parsing.hmmer import HMMERParser
 from util import fragment_to_fasta
 
 def create(params, logfile):
@@ -46,7 +46,7 @@ class HMMSearch(Sieve):
 
         self.hmmsearch(infilepath)
 
-        result = Parser(self.logfile).parse_file(inprotdb, self.hmmsearch_out, self.minscore)
+        result = HMMERParser(self.logfile).parse_file(inprotdb, self.hmmsearch_out, self.minscore)
 
         #Put result in db and sequences in outfile
         passed_count = 0

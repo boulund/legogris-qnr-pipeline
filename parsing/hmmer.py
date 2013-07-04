@@ -8,7 +8,7 @@ from util import PathError, ParseError
 
 TMPDIR = "./pipeline_data/"
 
-class Parser:
+class HMMERParser:
     def __init__(self, logfile):
         self.logfile = logfile
 
