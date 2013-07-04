@@ -1,3 +1,7 @@
+from __future__ import print_function
+import shlex
+import subprocess
+
 from sieve import Sieve
 from util import PathError
 
@@ -15,4 +19,15 @@ class SGAAligner(Sieve):
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
-        for
+        call_list = 'scripts/sga.sh %s' % infilepath
+        call = shlex.split(call_list)
+        # Run hmmsearch
+        try:
+            output = subprocess.Popen(call, stdin=subprocess.PIPE,
+                                        stderr=subprocess.PIPE).communicate()
+            print(output[1])
+            self.logfile.write("Finished SGA alignment on file "+infilepath+"\n")
+        except OSError, e:
+            self.logfile.write("Could not open one of sga align or "+infilepath+"\n")
+            raise e
+        self.logfile.flush()

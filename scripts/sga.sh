@@ -7,7 +7,8 @@
 
 # We assume the data is downloaded from the SRA and converted to fastq files
 # Set IN1 and IN2 to be the paths to the data on your filesystem
-IN=$1
+IN=${1##*/}
+FOLDER=${1%/*}
 
 # Parameters
 SGA_BIN=sga
@@ -23,7 +24,7 @@ CPU=4
 D=4000000
 
 # Correction k-mer value
-CK=41
+CK=11
 
 # The minimum k-mer coverage for the filter step. Each 27-mer
 # in the reads must be seen at least this many times
@@ -48,8 +49,9 @@ SCAFFOLD_TOLERANCE=1
 # Turn off collapsing bubbles around indels
 MAX_GAP_DIFF=0
 
+cd $FOLDER
 # First, preprocess the data to remove ambiguous basecalls
-$SGA_BIN preprocess --pe-mode 0 -o $IN.processed --permute-ambigous $IN
+$SGA_BIN preprocess --pe-mode=0 -o $IN.processed --permute-ambiguous $IN
 
 #
 # Error correction
@@ -61,7 +63,8 @@ $SGA_BIN index -a ropebwt -t $CPU --no-reverse $IN.processed
 
 # Perform error correction with a 41-mer.
 # The k-mer cutoff parameter is learned automatically
-$SGA_BIN correct -k $CK --discard --learn -t $CPU -o $IN.corrected $IN.processed
+#$SGA_BIN correct -k $CK --discard --learn -t $CPU -o $IN.corrected $IN.processed
+$SGA_BIN correct -k $CK -t $CPU -o $IN.corrected $IN.processed
 
 #
 # Contig assembly
@@ -74,13 +77,13 @@ $SGA_BIN index -a ropebwt -t $CPU $IN.corrected
 $SGA_BIN filter -x $COV_FILTER -t $CPU --homopolymer-check --low-complexity-check $IN.corrected
 
 # Merge simple, unbranched chains of vertices
-$SGA_BIN fm-merge -m $MOL -t $CPU -o $IN.merged $IN.corrcted.filter.pass.fa
+$SGA_BIN fm-merge -m $MOL -t $CPU -o $IN.merged $IN.corrected
 
 # Build an index of the merged sequences
 $SGA_BIN index -d 1000000 -t $CPU $IN.merged
 
 # Remove any substrings that were generated from the merge process
-$SGA_BIN rmdup -t $CPU $IN.merged
+$SGA_BIN rmdup -t $CPU -o $IN.merged.rmdup.fa $IN.merged
 
 # Compute the structure of the string graph
 $SGA_BIN overlap -m $MOL -t $CPU $IN.merged.rmdup.fa
@@ -91,17 +94,17 @@ $SGA_BIN assemble -m $OL -g $MAX_GAP_DIFF -r $R -o sga-result $IN.merged.rmdup.a
 #
 # Scaffolding/Paired end resolution
 #
-#CTGS=assemble.m$OL-contigs.fa
-#GRAPH=assemble.m$OL-graph.asqg.gz
+CTGS=sga-result-contigs.fa
+GRAPH=sga-result-graph.asqg.gz
 
 # Realign reads to the contigs
-#~/work/devel/sga/src/bin/sga-align --name celegans.pe $CTGS $IN1 $IN2
+sga-align --name aligned.pe $CTGS $IN
 
 # Make contig-contig distance estimates
-#~/work/devel/sga/src/bin/sga-bam2de.pl -n $MIN_PAIRS --prefix libPE celegans.pe.bam
+sga-bam2de.pl -n $MIN_PAIRS --prefix libPE aligned.pe.bam
 
 # Make contig copy number estimates
-#~/work/devel/sga/src/bin/sga-astat.py -m $MIN_LENGTH celegans.pe.refsort.bam > libPE.astat
+sga-astat.py -m $MIN_LENGTH aligned.pe.refsort.bam > libPE.astat
 
-#$SGA_BIN scaffold -m $MIN_LENGTH --pe libPE.de -a libPE.astat -o scaffolds.n$MIN_PAIRS.scaf $CTGS
-#$SGA_BIN scaffold2fasta -m $MIN_LENGTH -a $GRAPH -o scaffolds.n$MIN_PAIRS.fa -d $SCAFFOLD_TOLERANCE --use-overlap --write-unplaced scaffolds.n$MIN_PAIRS.scaf
+$SGA_BIN scaffold -m $MIN_LENGTH --pe libPE.de -a libPE.astat -o scaffolds.n$MIN_PAIRS.scaf $CTGS
+$SGA_BIN scaffold2fasta -m $MIN_LENGTH -a $GRAPH -o scaffolds.n$MIN_PAIRS.fa -d $SCAFFOLD_TOLERANCE --use-overlap --write-unplaced scaffolds.n$MIN_PAIRS.scaf

@@ -10,7 +10,7 @@ from bsddb3 import db
 import translator
 from sieve import Sieve
 from parsing.hmmer import HMMERParser
-from util import fragment_to_fasta
+from util import sequence_to_fasta
 
 def create(params, logfile):
     return HMMSearch(params, logfile)
@@ -58,9 +58,12 @@ class HMMSearch(Sieve):
                     outprotdb.put(id, json.dumps(sequence))
                     (dnaid, frame) = id.split('_')
                     frame = int(frame)
-                    dna = indnadb.get(dnaid)
-                    outdnadb.put(dnaid, translator.frame_sequence(dna, frame))
-                    outfile.write(fragment_to_fasta(sequence, id))
+                    dna = translator.frame_sequence(indnadb.get(dnaid), frame)
+                    outdnadb.put(dnaid, dna)
+                    if outfilepath.endswith('pfa'):
+                        outfile.write(sequence_to_fasta(id, sequence['protein']))
+                    elif outfilepath.endswith('nfa'):
+                        outfile.write(sequence_to_fasta(id, dna))
                     passed_count += 1
         finally:
             self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))
@@ -83,7 +86,6 @@ class HMMSearch(Sieve):
 
         # Put together the entire string to call hmmsearch
         call_list = 'hmmsearch --cpu %d --notextw %s -o %s %s %s' % (self.numcpu, heurflag, self.hmmsearch_out, self.model_path, infilepath)
-        print(call_list)
         hmmsearch = shlex.split(call_list)
         # Run hmmsearch
         try:

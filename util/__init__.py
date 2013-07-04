@@ -42,29 +42,9 @@ def fixfastas(sequences):
     return [fixfasta(seq) for seq in sequences]
 ############## END fixfasta
 
-def fragment_to_fasta(fragment, id, sequence='protein'):
-    seq = (fragment['dna'] if sequence == 'dna' else fragment['protein'])
-    return fixfasta(''.join(['>', id, '\n', seq, '\n']))
+def sequence_to_fasta(id, sequence):
+    return fixfasta(''.join(['>', id, '\n', sequence, '\n']))
 
-def parse_fasta(filename):
-    sequences = []
-    tempseqid = ''
-    tempseq = []
-    try:
-        seqfile = open(filename,'r')
-        for line in seqfile:
-            if line.startswith('>'):
-                seq = { 'id': tempseqid, 'dna': ''.join(tempseq) }
-                sequences.append(seq)
-                tempseqid = line[1::]
-                tempseq = []
-            elif not line.startswith(">"):
-                tempseq.append(line)
-        seq = { 'id': tempseqid, 'dna': ''.join(tempseq) }
-        sequences.append(seq)
-        return sequences
-    except OSError:
-        raise PathError(''.join(['ERROR: cannot open', refseqpath]))
 ##-----------------------------------------------##
 ##                CUSTOM EXCEPTIONS              ##
 ##-----------------------------------------------##
