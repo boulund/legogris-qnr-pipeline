@@ -28,6 +28,8 @@ class HMMERParser:
                 seq = json.loads(indb.get(pseq['id']))
                 seq['score'] = pseq['score']
                 seq['dscore'] = pseq['dscore']
+                seq['dstart'] = pseq['dstart']
+                seq['dfinish'] = pseq['dfinish']
                 indb.put(pseq['id'], json.dumps(seq))
                 seq['id'] = pseq['id']
                 sequences.append(seq)

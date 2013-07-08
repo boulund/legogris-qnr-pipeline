@@ -28,7 +28,7 @@ class HMMSearch(Sieve):
             'model_path',
             'hmmsearch_out',
             ('numcpu', 4),
-            ('write_only_domain', False), #If output FASTA file should contain entire input sequence or just matching domain.
+            ('write_only_domain', True), #If output FASTA file should contain entire input sequence or just matching domain.
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
             # for crashing if not used and it only increases the number of really low
@@ -59,16 +59,17 @@ class HMMSearch(Sieve):
                     outprotdb.put(id, json.dumps(sequence))
                     (dnaid, frame) = id.split('_')
                     frame = int(frame)
-                    dna = translator.frame_sequence(indnadb.get(dnaid), frame)
-                    outdnadb.put(dnaid, dna)
+                    rawdna = indnadb.get(dnaid)
+                    outdnadb.put(dnaid, rawdna)
                     if outfilepath.endswith('pfa'):
                         if self.write_only_domain:
                             seq = sequence['protein'][sequence['dstart']:sequence['dfinish']+1]
                         else:
                             seq = sequence['protein']
                     elif outfilepath.endswith('nfa'):
+                        dna = translator.frame_sequence(rawdna, frame)
                         if self.write_only_domain:
-                            seq = dna[sequence['dstart']*3:(sequence['dfinish']+1)*3]
+                            seq = dna[(sequence['dstart']-1)*3:(sequence['dfinish'])*3]
                         else:
                             seq = dna
                     outfile.write(sequence_to_fasta(id, seq))
