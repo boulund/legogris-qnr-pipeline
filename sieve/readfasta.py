@@ -26,7 +26,6 @@ class FastaReader(Sieve):
             tempseq = []
             for line in infile:
                 if line.startswith('>'):
-                    n += 1
                     if self.item_limit and n > self.item_limit:
                         break
                     if len(tempseq) > 0:
@@ -37,6 +36,7 @@ class FastaReader(Sieve):
                         for (frame, dump, out) in seqs:
                             outprotdb.put(''.join([id, '_', str(frame)]), dump)
                             outfile.write(out)
+                        n += 1
 
                     (seqid, seqdesc) = line[1::].split(' ', 1)
                     tempseq = []
