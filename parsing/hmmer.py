@@ -1,4 +1,5 @@
 from os import path, makedirs, system
+from itertools import takewhile
 from datetime import date
 import time
 import pickle
@@ -22,25 +23,20 @@ class HMMERParser:
             # Parse the hmmsearch output file -- Extract hits above minscore (0)
             logfile.write("Parsing "+infilepath+"\n")
             parsed = _parse_hmmsearch_output(infilepath,minscore)
-            score_id_tuples, dbpath = parsed # Unpack parsed information
-            scores,dscores,ids = zip(*score_id_tuples) # Unzip the scores/IDs
-            for (score, dscore, id) in score_id_tuples:
-                seq = json.loads(indb.get(id))
-                seq['score'] = score
-                seq['dscore'] = dscore
-                indb.put(id, json.dumps(seq))
-                seq['id'] = id
+            seqs, dbpath = parsed # Unpack parsed information
+            for pseq in seqs:
+                seq = json.loads(indb.get(pseq['id']))
+                seq['score'] = pseq['score']
+                seq['dscore'] = pseq['dscore']
+                indb.put(pseq['id'], json.dumps(seq))
+                seq['id'] = pseq['id']
                 sequences.append(seq)
-
             return sequences
 
         except IOError:
             logfile.write("Could not open file for reading: "+infilepath+"\n")
             logfile.write("Continuing with next file...\n")
-        except ValueError:
-            logfile.write("Found no sequences with domain score above or equal "+str(minscore))
-            logfile.write(" in file: "+infilepath+"\n")
-        except PathError, e:
+        except PathError as e:
             logfile.write(e.message+"\n")
         except ParseError as e:
             logfile.write(e.message+"\n")
@@ -83,44 +79,60 @@ def _parse_hmmsearch_output(filename,min_score=0):
     import re
 
     score_id_tuples = []
+    seqs = {}
 
     file = open(filename,"r")
 
+    dbpattern = re.compile(r"# target sequence database:\s*([\w\d\./-]*)")
+    headerpattern = re.compile(r'^.{13,14}?(\d+\.\d).{18,20}\s(\d+\.\d).{17}\s([\w\d\._|-]*)')
+    bodypattern = re.compile(r'\s+\d+\s.\s+(\d+\.\d).+..\s+(\d+)\s+(\d+)\s+..\s+(\d+)\s+(\d+)\s+..')
     try:
         line = file.readline()
         if not line.startswith("# hmmsearch ::"):
             raise ParseError("NOTE: File is not a valid hmmsearch output file: "+filename)
 
-        while file:
-            line = file.readline()
+        #First get scores, dscores and ids from header
+        for line in takewhile(lambda l: not l.startswith("Domain annotation") and not l.startswith("//"), file):
             # Extract the path to the database where to collect the sequence data
-            dbpattern = r"# target sequence database:\s*([\w\d\./-]*)"
-            foundpath = re.match(dbpattern,line)
+            foundpath = dbpattern.match(line)
             if foundpath is not(None):
                 dbpath = path.abspath(foundpath.group(1))
 
             # Match to find the sequence score, maximum domain score and sequence ID
             # from the list of results
-            pattern = r'^.{13,14}?(\d+\.\d).{18,20}\s(\d+\.\d).{17}\s([\w\d\._|-]*)'
-            found = re.match(pattern,line) # Find the first match to the pattern
+            found = headerpattern.match(line) # Find the first match to the pattern
             # If the DOMAIN score is higher than or equal min_score count it as a
             # preliminary hit and store the sequence ID and scores.
             if found is not None:
-                sequence_score = float(found.group(1))
-                domain_score = float(found.group(2))
-                sequence_id = found.group(3)
-                if domain_score >= min_score:
-                    score_id_tuples.append((sequence_score, domain_score, sequence_id))
+                seq = {}
+                seq['score'] = float(found.group(1))
+                #seq['dscore'] = float(found.group(2))
+                dscore = float(found.group(2))
+                seq['id'] = found.group(3)
+                if dscore >= min_score:
+                    seqs[seq['id']] = seq
                     continue
-            if line.startswith(">>") or line.startswith("//"): # Now we stop reading the file!
-                break
+
+        #Second, get alignment info
+        for line in file:
+            if line.startswith('>>'):
+                seq = seqs[line.split(' ')[1].strip()]
+                continue
+            hit = bodypattern.match(line)
+            if hit is not None and seq is not None:
+                dscore = float(hit.group(1))
+                if not seq.has_key('dscore') or seq['dscore'] < dscore:
+                    seq['dscore'] = dscore
+                    seq['dstart'] = int(hit.group(2))
+                    seq['dfinish'] = int(hit.group(3))
+            if line.startswith('\n'):
+                seq = None
     finally:
         file.close()
 
-    if score_id_tuples == []:
+    if seqs == {}:
         raise ValueError
     else:
-        returntuple = (score_id_tuples,dbpath)
-        return returntuple
+        return (seqs.values(),dbpath)
 ############## END  parse_hmmsearch_output
 

@@ -28,6 +28,7 @@ class HMMSearch(Sieve):
             'model_path',
             'hmmsearch_out',
             ('numcpu', 4),
+            ('write_only_domain', False), #If output FASTA file should contain entire input sequence or just matching domain.
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
             # for crashing if not used and it only increases the number of really low
@@ -61,9 +62,16 @@ class HMMSearch(Sieve):
                     dna = translator.frame_sequence(indnadb.get(dnaid), frame)
                     outdnadb.put(dnaid, dna)
                     if outfilepath.endswith('pfa'):
-                        outfile.write(sequence_to_fasta(id, sequence['protein']))
+                        if self.write_only_domain:
+                            seq = sequence['protein'][sequence['dstart']:sequence['dfinish']+1]
+                        else:
+                            seq = sequence['protein']
                     elif outfilepath.endswith('nfa'):
-                        outfile.write(sequence_to_fasta(id, dna))
+                        if self.write_only_domain:
+                            seq = dna[sequence['dstart']*3:(sequence['dfinish']+1)*3]
+                        else:
+                            seq = dna
+                    outfile.write(sequence_to_fasta(id, seq))
                     passed_count += 1
         finally:
             self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))

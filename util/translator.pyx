@@ -583,7 +583,6 @@ def translate_sequence(char *id, char *name, char *desc, char *sequence):
             k = len(dna)
             for i in range(0, k-1, 3):
                 c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != k-2 else x ]
-                #print(chr(dna[i]), chr(dna[i+1]), chr(dna[i+2]), c)
                 pseq[j] = c
                 j += 1
             protein = pseq
