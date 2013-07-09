@@ -7,20 +7,25 @@ class FASTAParser:
 
     #for iterating
     def parse_fasta(self, filename):
-        tempseqid = ''
+        id = ''
+        desc = ''
         tempseq = []
         try:
             seqfile = open(filename,'r')
             for line in seqfile:
                 if line.startswith('>'):
-                    if tempseq or tempseqid:
-                        yield { 'id': tempseqid, 'dna': ''.join(tempseq) }
-                    tempseqid = line[1::].strip()
+                    if not id is '':
+                        yield { 'id': id.strip(), 'desc': desc.strip(), 'dna': ''.join(tempseq) }
+                    if ' ' in line:
+                        (id, desq) = line[1::].split(' ', 1)
+                    else:
+                        id = line[1::].strip()
+                        desq = ''
                     tempseq = []
-                elif not line.startswith(">"):
-                    tempseq.append(line.strip())
-            if tempseq or tempseqid:
-                yield { 'id': tempseqid, 'dna': ''.join(tempseq) }
+                elif not line.startswith('>'):
+                    tempseq.append(line.rstrip())
+            if not id is '':
+                yield { 'id': id.strip(), 'desc': desc.strip(), 'dna': ''.join(tempseq) }
         except OSError:
             raise PathError(''.join(['ERROR: cannot open', refseqpath]))
 

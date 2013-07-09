@@ -79,7 +79,7 @@ $SGA_BIN index -d 1000000 -t $CPU $IN.merged
 $SGA_BIN rmdup -t $CPU -o $IN.merged.rmdup.fa $IN.merged
 
 # Compute the structure of the string graph
-$SGA_BIN overlap -m $MOL -e 0.01 -x -t $CPU $IN.merged.rmdup.fa
+$SGA_BIN overlap -m $MOL -e 0.005 -x -t $CPU $IN.merged.rmdup.fa
 
 # Perform the contig assembly without bubble popping
 $SGA_BIN assemble -m $OL -g $MAX_GAP_DIFF -r $R -o $IN.result $IN.merged.rmdup.asqg.gz

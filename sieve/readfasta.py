@@ -3,7 +3,9 @@ from __future__ import print_function
 import types
 import sys
 from datetime import datetime
+from itertools import takewhile
 
+from parsing.fasta import FASTAParser
 from translator import translate_sequence
 from sieve import Sieve
 
@@ -17,41 +19,20 @@ class FastaReader(Sieve):
         self.param_names = [('item_limit', 0)]
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
-        infile = open(infilepath,'r')
         outfile = open(outfilepath, 'w')
+        parser = FASTAParser(self.logfile)
         prots = {}
         dnas = {}
+        n = 0
         try:
-            n = 0
-            tempseq = []
-            for line in infile:
-                if line.startswith('>'):
-                    if self.item_limit and n > self.item_limit:
-                        break
-                    if len(tempseq) > 0:
-                        dna = ''.join(tempseq)
-                        id = str(n)
-                        seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
-                        outdnadb.put(id, dna)
-                        for (frame, dump, out) in seqs:
-                            outprotdb.put(''.join([id, '_', str(frame)]), dump)
-                            outfile.write(out)
-                        n += 1
-
-                    (seqid, seqdesc) = line[1::].split(' ', 1)
-                    tempseq = []
-                else:
-                    tempseq.append(line.rstrip())
-            #When the file is finished: Save the final sequence just like the others
-            dna = ''.join(tempseq)
-            id = str(n)
-            seqs = translate_sequence(id, seqid, seqdesc.lstrip(), dna)
-            outdnadb.put(id, dna)
-            for (frame, dump, out) in seqs:
-                outprotdb.put(''.join([id, '_', str(frame)]), dump)
-                outfile.write(out)
+            for nseq in takewhile(lambda x: not self.item_limit or n <= self.item_limit, parser.parse_fasta(infilepath)):
+                n += 1
+                id = str(n)
+                outdnadb.put(id, nseq['dna'])
+                for (frame, dump, out) in translate_sequence(id, nseq['id'], nseq['desc'], nseq['dna']):
+                    outprotdb.put(''.join([id, '_', str(frame)]), dump)
+                    outfile.write(out)
         finally:
-            infile.close()
             outfile.close()
 
 
