@@ -21,12 +21,12 @@ def run():
                 #(blastclust, {'blastclust_out': 'tutorial/blastclust_out', 'clusters_out_path': 'tutorial/identified_clusters', 'clusters_with_scores_out_path': 'tutorial/identified_clusters.scores'})
                 (sga, {})
             ],     #sieves
-            ['', 'tutorial/fragments.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
-            [inpath, 'tutorial/readfasta.pfa', 'tutorial/fragments_passed.nfa', 'tutorial/blastclust_in.pfa'],   #files
+            ['', 'tutorial/fragments.nt.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
+            [inpath, 'tutorial/readfasta.nt.pfa', 'tutorial/fragments_passed.nfa', 'tutorial/clusters.pfa'],   #files
             logfile,
             level,
             #kyoto,
-            1,2
+            2,3
         )
     finally:
         logfile.close()

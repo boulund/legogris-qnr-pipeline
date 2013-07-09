@@ -39,6 +39,8 @@ class HMMSearch(Sieve):
             ('classifyD', 150.64), #the definition for long sequences. defparam = 85
             ('minscore', 0),
             ('minlength', 20), #minimum fragment length allowed.
+            ('max_domain_length', 21844),
+            ('max_sequence_length', 21844000),
             ('classificationfunction', lambda L: self.classifyK*L + self.classifyM)
         ]
 
@@ -142,9 +144,10 @@ class HMMSearch(Sieve):
         sequence_length = len(sequence['protein'])
         longseqcutoff = self.classifyC
         longseqdef = self.classifyD
+        domain_length = sequence['dfinish']-sequence['dstart']+1
         # Pretty self-explanatory. Has a range in which the classification
         # function is used.
-        return (sequence_length >= longseqdef and sequence['dscore'] >= longseqcutoff) or (sequence_length >= self.minlength and sequence_length < longseqdef and sequence['dscore'] > self.classificationfunction(sequence_length))
+        return sequence_length <= self.max_sequence_length and domain_length <= self.max_domain_length and ((sequence_length >= longseqdef and sequence['dscore'] >= longseqcutoff) or (sequence_length >= self.minlength and sequence_length < longseqdef and sequence['dscore'] > self.classificationfunction(sequence_length)))
 
     ######################### END classify_qnr
 
