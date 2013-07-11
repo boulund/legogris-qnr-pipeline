@@ -4,7 +4,6 @@ class FASTAParser:
     def __init__(self, logfile):
         self.logfile = logfile
 
-
     #for iterating
     def parse_fasta(self, filename):
         id = ''
@@ -17,10 +16,10 @@ class FASTAParser:
                     if not id is '':
                         yield { 'id': id.strip(), 'desc': desc.strip(), 'dna': ''.join(tempseq) }
                     if ' ' in line:
-                        (id, desq) = line[1::].split(' ', 1)
+                        (id, desc) = line[1::].split(' ', 1)
                     else:
                         id = line[1::].strip()
-                        desq = ''
+                        desc = ''
                     tempseq = []
                 elif not line.startswith('>'):
                     tempseq.append(line.rstrip())
