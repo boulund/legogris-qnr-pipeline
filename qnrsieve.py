@@ -8,11 +8,12 @@ logfile.open()
 
 _PROFILE = False
 def run():
+    inpath = ['tutorial/database/ntsmallest1_plus_qnr.nfa', 'tutorial/database/ntsmallest2_plus_qnr.nfa', 'tutorial/database/ntsmallest3_plus_qnr.nfa']
     #inpath = 'tutorial/database/ntsmaller_plus_qnr.nfa'
     #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
     #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
     #inpath = 'tutorial/database/nt_plus_7_qnr.nfa'
-    inpath = 'tutorial/database/india2.fastq.gz'
+    #inpath = 'tutorial/database/india2.fastq.gz'
 
     try:
         run_sieves(
@@ -22,12 +23,12 @@ def run():
                 #(blastclust, {'blastclust_out': 'tutorial/blastclust_out', 'clusters_out_path': 'tutorial/identified_clusters', 'clusters_with_scores_out_path': 'tutorial/identified_clusters.scores'})
                 (sga, {})
             ],     #sieves
-            ['', 'tutorial/fragments.nt.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
-            [inpath, 'tutorial/readfasta.nt.pfa', 'tutorial/fragments_passed.nfa', 'tutorial/clusters.pfa'],   #files
+            ['', 'tutorial/fragments.db', 'tutorial/fragments_passed.db', 'tutorial/clusters.db'],   #dbs
+            [inpath, 'tutorial/readfasta.pfa', 'tutorial/fragments_passed.nfa', 'tutorial/clusters.pfa'],   #files
             logfile,
             level,
             #kyoto,
-            2,3
+            0,3
         )
     finally:
         logfile.close()

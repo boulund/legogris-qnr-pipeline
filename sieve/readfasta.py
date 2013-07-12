@@ -21,14 +21,16 @@ class FastaReader(Sieve):
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         startid = 0
+        open(outfilepath, 'w').close()
         if isinstance(infilepath, list):
             for infile in infilepath:
-                startid = self.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath, startid)
+                print('Opening new file %s, n: %d' % (infile, startid))
+                startid = self.run_file(indnadb, inprotdb, infile, outdnadb, outprotdb, outfilepath, startid)
         else:
-            self.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
+            self.run_file(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
 
     def run_file(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath, startid=0):
-        outfile = open(outfilepath, 'w')
+        outfile = open(outfilepath, 'a')
         if '.gz' in infilepath:
             parser = FASTQParser(self.logfile, gzip=True)
         elif '.fastq' in infilepath or '.fq' in infilepath:
