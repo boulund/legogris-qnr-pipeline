@@ -4,6 +4,10 @@ class FASTAParser:
     def __init__(self, logfile):
         self.logfile = logfile
 
+    #TODO: gzip like FASTQ
+    def parse(self, filename):
+        return self.parse_fasta(filename)
+
     #for iterating
     def parse_fasta(self, filename):
         id = ''

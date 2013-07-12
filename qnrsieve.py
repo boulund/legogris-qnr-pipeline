@@ -9,9 +9,10 @@ logfile.open()
 _PROFILE = False
 def run():
     #inpath = 'tutorial/database/ntsmaller_plus_qnr.nfa'
-    inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
+    #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
     #inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
     #inpath = 'tutorial/database/nt_plus_7_qnr.nfa'
+    inpath = 'tutorial/database/india2.fastq.gz'
 
     try:
         run_sieves(
@@ -26,7 +27,7 @@ def run():
             logfile,
             level,
             #kyoto,
-            2,3
+            0,3
         )
     finally:
         logfile.close()

@@ -2,7 +2,6 @@ from datetime import date
 import time
 import pickle
 import json
-from bsddb3 import db
 import uuid
 
 from sieve import Sieve
@@ -14,9 +13,8 @@ def create(params, logfile):
 class BLASTClusterer(Sieve):
     def init(self, params):
         self.indbflags = None
-        self.indbmode = db.DB_HASH
-        self.outdbflags = db.DB_DUPSORT
-        self.outdbmode = db.DB_HASH
+        self.indbmode = True
+        self.outdbmode = True
         self.name = 'BLASTClust'
         self.param_names = [
             'blastclust_out',

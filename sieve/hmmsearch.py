@@ -5,7 +5,6 @@ import subprocess
 from datetime import date
 import time
 import json
-from bsddb3 import db
 
 import translator
 from sieve import Sieve
@@ -18,11 +17,8 @@ def create(params, logfile):
 class HMMSearch(Sieve):
 
     def init(self, params):
-        self.indbaccess = 0
-        self.indbflags = None
-        self.indbmode = db.DB_HASH
-        self.outdbflags = None
-        self.outdbmode = db.DB_HASH
+        self.indbmode = True
+        self.outdbmode = True
         self.name = 'HMMer search'
         self.param_names = [
             'model_path',
