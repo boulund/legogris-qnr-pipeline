@@ -49,10 +49,15 @@ def _run_sieves(sieves, dbs, files, logfile, dbengine, startindex=0, endindex=-1
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
             sieve = s.create(params, logfile)
-            inpath = run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbengine)
+            run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbengine)
         elif isinstance(sieves[i], list):
-            for s in sieves[i]:
-                return _run_sieves([s]+sieves[i::], dbs[i-1::], files[i-1::], logfile, dbengine)
+            for j in xrange(len(sieves[i])):
+                s = sieves[i][j]
+                sfiles = [files[i]] + [f+str(j) for f in files[i+1::]]
+                sdbs = [dbs[i]] + [db+str(j) for db in dbs[i+1::]]
+                ssieves = [s]+sieves[i+1::]
+                _run_sieves(ssieves, sdbs, sfiles, logfile, dbengine)
+            return
 
 def run_sieves(sieves, dbs, files, logfile, dbengine, startindex=0, endindex=-1):
     _run_sieves(sieves, dbs, files, logfile, dbengine, startindex, endindex)

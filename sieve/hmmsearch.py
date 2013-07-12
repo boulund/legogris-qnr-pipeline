@@ -42,6 +42,12 @@ class HMMSearch(Sieve):
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
+        print(indnadb)
+        print(inprotdb)
+        print(infilepath)
+        print(outdnadb)
+        print(outprotdb)
+        print(outfilepath)
 
         self.hmmsearch(infilepath)
 
@@ -59,12 +65,12 @@ class HMMSearch(Sieve):
                     frame = int(frame)
                     rawdna = indnadb.get(dnaid)
                     outdnadb.put(dnaid, rawdna)
-                    if outfilepath.endswith('pfa'):
+                    if '.pfa' in outfilepath:
                         if self.write_only_domain:
                             seq = sequence['protein'][sequence['dstart']:sequence['dfinish']+1]
                         else:
                             seq = sequence['protein']
-                    elif outfilepath.endswith('nfa'):
+                    elif '.nfa' in outfilepath:
                         dna = translator.frame_sequence(rawdna, frame)
                         if self.write_only_domain:
                             seq = dna[(sequence['dstart']-1)*3:(sequence['dfinish'])*3]
