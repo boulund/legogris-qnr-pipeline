@@ -1,3 +1,26 @@
+##-----------------------------------------------##
+##            FIX FASTA FORMATTING               ##
+##-----------------------------------------------##
+def fixfastas(sequences):
+    '''
+    Takes a sequence and tries to correct its
+    formatting by splitting it on lines of maximum length 80.
+
+    Input::
+
+        sequences   FASTA sequence, in one
+                    complete string with \n markers
+                    between identifier line and sequence.
+
+    Returns::
+
+        outsequences   sequence with hopefully
+                    better formatting.
+
+    Errors::
+
+        (none)
+    '''
 def fixfasta(sequence):
 
     from math import ceil
@@ -15,31 +38,6 @@ def fixfasta(sequence):
     else:
         return sequence
 
-##-----------------------------------------------##
-##            FIX FASTA FORMATTING               ##
-##-----------------------------------------------##
-def fixfastas(sequences):
-    '''
-    Takes a list of sequences and tries to correct their
-    formatting.
-
-    Input::
-
-        sequences   list of sequences, each in one
-                    complete string with \n markers
-                    between identifier line and sequence.
-
-    Returns::
-
-        outsequences   list of sequences with hopefully
-                    better formatting.
-
-    Errors::
-
-        (none)
-    '''
-
-    return [fixfasta(seq) for seq in sequences]
 ############## END fixfasta
 
 def sequence_to_fasta(id, sequence):
