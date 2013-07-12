@@ -310,7 +310,6 @@ for a in 'AGCTRYSWKMBVDHNX':
         for c in 'AGCTRYSWKMBVDHNX':
             GT[<char>ord(a)][<char>ord(b)][<char>ord(c)] = ord('X')
 
-
 GT['T']['T']['T'] = 'F'
 GT['T']['T']['C'] = 'F'
 GT['T']['T']['Y'] = 'F'
@@ -581,17 +580,17 @@ def translate_sequence(char *id, char *name, char *desc, char *sequence):
             #Translate dna codons to protein
             j = 0
             k = len(dna)
-            for i in range(0, k-1, 3):
-                c = GT[<char>dna[i]][<char>dna[i+1]][<char>dna[i+2] if i != k-2 else x ]
+            for i in range(0, k, 3):
+                c = GT[<char>dna[i]][<char>dna[i+1] if i < k-1 else x ][<char>dna[i+2] if i < k-2 else x ]
                 pseq[j] = c
                 j += 1
+            pseq[j] = 0
             protein = pseq
-            #Faster but less secure (wrt collissions) than stock uuid4
             seq = {
                 'protein': protein,
                 'name': name,
                 'description': desc,
-                'frame': frame+0
+                'frame': frame
             }
             out = ''.join(['>', id, '_', str(frame), '\n', protein, '\n'])
             try:
