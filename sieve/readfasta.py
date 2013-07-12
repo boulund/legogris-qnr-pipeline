@@ -20,6 +20,14 @@ class FastaReader(Sieve):
         self.param_names = [('item_limit', 0)]
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
+        startid = 0
+        if isinstance(infilepath, list):
+            for infile in infilepath:
+                startid = self.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath, startid)
+        else:
+            self.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
+
+    def run_file(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath, startid=0):
         outfile = open(outfilepath, 'w')
         if '.gz' in infilepath:
             parser = FASTQParser(self.logfile, gzip=True)
@@ -29,7 +37,7 @@ class FastaReader(Sieve):
             parser = FASTAParser(self.logfile)
         prots = {}
         dnas = {}
-        n = 0
+        n = startid
         try:
             for nseq in takewhile(lambda x: not self.item_limit or n <= self.item_limit, parser.parse(infilepath)):
                 n += 1
@@ -38,21 +46,7 @@ class FastaReader(Sieve):
                 for (frame, dump, out) in translate_sequence(id, nseq['id'], nseq.get('desc', ''), nseq['dna']):
                     outprotdb.put(''.join([id, '_', str(frame)]), dump)
                     outfile.write(out)
+            return n
         finally:
             outfile.close()
 
-
-if __name__ == "__main__":
-    import cProfile
-    import berkeley
-    #Reads FASTA file. Adds all six frames of fragments to database and a new FASTA file with new UUIDs as keys in both.
-    #TODO: Clean up, get it workin' or somethin'
-    def translate_fasta(inpath, outpath):
-        outfile = open(outpath, 'w')
-        infile = open(inpath,'r')
-        outdb = berkeley.open_fragments('n')
-        Sieve().run(None, infile, outdb, outfile)
-    #inpath = 'tutorial/database/ntsmall_plus_qnr.nfa'
-    inpath = 'tutorial/database/ntsubset_plus_7_qnr.nfa'
-    cProfile.run("translate_fasta('"+inpath+"', 'test.pfa')")
-    #translate_fasta(inpath, 'test.pfa')

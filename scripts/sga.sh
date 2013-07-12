@@ -82,7 +82,7 @@ $SGA_BIN rmdup -t $CPU -o $IN.merged.rmdup.fa $IN.merged
 $SGA_BIN overlap -m $MOL -e 0.005 -x -t $CPU $IN.merged.rmdup.fa
 
 # Perform the contig assembly without bubble popping
-$SGA_BIN assemble -m $OL -g $MAX_GAP_DIFF -r $R -o $IN.result $IN.merged.rmdup.asqg.gz
+$SGA_BIN assemble -l 45 -m $OL -g $MAX_GAP_DIFF -r $R -o $IN.result $IN.merged.rmdup.asqg.gz
 
 #
 # Scaffolding/Paired end resolution
