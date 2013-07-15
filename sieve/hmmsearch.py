@@ -6,7 +6,7 @@ from datetime import date
 import time
 import json
 
-import translator
+from util import translator
 from sieve import Sieve
 from parsing.hmmer import HMMERParser
 from util import sequence_to_fasta
@@ -42,13 +42,6 @@ class HMMSearch(Sieve):
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
-        print(indnadb)
-        print(inprotdb)
-        print(infilepath)
-        print(outdnadb)
-        print(outprotdb)
-        print(outfilepath)
-
         self.hmmsearch(infilepath)
 
         result = HMMERParser(self.logfile).parse_file(inprotdb, self.hmmsearch_out, self.minscore)

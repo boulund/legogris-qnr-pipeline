@@ -7,7 +7,7 @@ from itertools import takewhile
 
 from parsing.fasta import FASTAParser
 from parsing.fastq import FASTQParser
-from translator import translate_sequence
+from util.translator import translate_sequence
 from sieve import Sieve
 
 def create(params, logfile):

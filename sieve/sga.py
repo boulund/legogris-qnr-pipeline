@@ -18,18 +18,38 @@ class SGAAligner(Sieve):
         self.name = 'SGA Aligner'
         self.param_names = [
             ('result_out_path', ''),
-            ('parse_output', True)
+            ('max_edges', 200),
+            ('numcpu', 4),
+            ('min_branch_length', 45),
+            ('min_merge_overlap', 15),
+            ('min_assembly_overlap', 20),
+            ('max_gap_divergence', 0),
+            ('resolve_small', 10),
+            ('error_rate', 0.02)
         ]
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
-        call_list = 'scripts/sga.sh %s' % infilepath
-        call = shlex.split(call_list)
         # Run SGA pipeline
         try:
-            output = subprocess.Popen(call, stdin=subprocess.PIPE,
-                                        stderr=subprocess.PIPE).communicate()
-            print(output[1])
+            (dir, filepath) = infilepath.rsplit('/', 1)
+            commands = [
+                str.format('sga preprocess --pe-mode=0 -o {0}.processed --permute-ambiguous {0}', infilepath),
+                str.format('sga index -a ropebwt -t {0} --no-reverse {1}.processed', self.numcpu, infilepath),
+                str.format('sga correct -a overlap -t {0} -o {1}.corrected {1}.processed', self.numcpu, infilepath),
+                str.format('sga index -a ropebwt -t {0} {1}.corrected', self.numcpu, infilepath),
+                str.format('sga filter -t {0} --no-kmer-check {1}.corrected', self.numcpu, infilepath),
+                str.format('sga fm-merge -m {0} -t {1} -o {2}.merged {2}.filter.pass.fa', self.min_merge_overlap, self.numcpu, infilepath),
+                str.format('sga index -d 1000000 -t {0} {1}.merged', self.numcpu, infilepath),
+                str.format('sga rmdup -t {0} -o {1}.merged.rmdup.fa {1}.merged', self.numcpu, infilepath),
+                str.format('sga overlap --min-overlap={0} -e {1} --exhaustive --threads={2} {3}.merged.rmdup.fa', self.min_merge_overlap, self.error_rate, self.numcpu, infilepath),
+                str.format('assemble --max-edges={0} --min-branch-length={1} --min-overlap={2} --max-gap-divergence={3} --resolve-small={4} -o {5}.result {5}.merged.rmdup.asqg.gz', self.max_edges, self.min_branch_length, self.min_assembly_overlap, self.error_rate, self.resolve_small, self.numcpu, infilepath)
+            ]
+            for cmd in commands:
+                call = shlex.split(cmd)
+                output = subprocess.Popen(call, stdin=subprocess.PIPE,
+                                            stderr=subprocess.PIPE).communicate()
+                print(output[1])
             self.logfile.write("Finished SGA alignment on file "+infilepath+"\n")
         except OSError, e:
             self.logfile.write("Could not open one of sga align or "+infilepath+"\n")

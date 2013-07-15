@@ -15,7 +15,7 @@ SGA_BIN=sga
 
 # Overlap parameter used for the final assembly. This is the only argument
 # to the script
-OL=25
+OL=20
 
 # The number of threads to use
 CPU=4
@@ -32,7 +32,7 @@ COV_FILTER=1
 
 # Overlap parameter used for FM-merge. This value must be no greater than the minimum
 # overlap value you wish to try for the assembly step.
-MOL=20
+MOL=15
 
 # Parameter for the small repeat resolution algorithm
 R=10
@@ -41,7 +41,7 @@ R=10
 MIN_PAIRS=5
 
 # The minimum length of contigs to include in a scaffold
-MIN_LENGTH=200
+MIN_LENGTH=150
 
 # Distance estimate tolerance when resolving scaffold sequences
 SCAFFOLD_TOLERANCE=1
@@ -79,27 +79,34 @@ $SGA_BIN index -d 1000000 -t $CPU $IN.merged
 $SGA_BIN rmdup -t $CPU -o $IN.merged.rmdup.fa $IN.merged
 
 # Compute the structure of the string graph
-$SGA_BIN overlap -m $MOL -e 0.005 -x -t $CPU $IN.merged.rmdup.fa
+$SGA_BIN overlap --min-overlap=$MOL -e 0.02 --exhaustive --threads=$CPU $IN.merged.rmdup.fa
 
 # Perform the contig assembly without bubble popping
-$SGA_BIN assemble -l 45 -m $OL -g $MAX_GAP_DIFF -r $R -o $IN.result $IN.merged.rmdup.asqg.gz
+$SGA_BIN assemble --max-edges=200 --min-branch-length=45 --min-overlap=$OL --max-gap-divergence=$MAX_GAP_DIFF --resolve-small=$R -o $IN.result $IN.merged.rmdup.asqg.gz
 
 #
 # Scaffolding/Paired end resolution
 #
-#CTGS=sga-result-contigs.fa
-#GRAPH=sga-result-graph.asqg.gz
+CTGS=$IN.result-contigs.fa
+GRAPH=$IN.result-graph.asqg.gz
 
+echo P
 # Realign reads to the contigs
 #sga-align --name aligned.pe $CTGS $IN
-#echo a
+exit
+echo a
+exit
 # Make contig-contig distance estimates
-#sga-bam2de.pl -n $MIN_PAIRS --prefix libPE aligned.pe.bam
-#echo 1
+sga-bam2de.pl -n $MIN_PAIRS --prefix libPE aligned.pe.bam
+exit
+echo 1
 # Make contig copy number estimates
-#sga-astat.py -m $MIN_LENGTH aligned.pe.refsort.bam > libPE.astat
-#echo 2
-#$SGA_BIN scaffold -m $MIN_LENGTH --pe libPE.de -a libPE.astat -o scaffolds.n$MIN_PAIRS.scaf $CTGS
-#echo z
-#$SGA_BIN scaffold2fasta -m $MIN_LENGTH -a $GRAPH -o scaffolds.n$MIN_PAIRS.fa -d $SCAFFOLD_TOLERANCE --use-overlap --write-unplaced scaffolds.n$MIN_PAIRS.scaf
-#echo p
+sga-astat.py -m $MIN_LENGTH aligned.pe.refsort.bam > libPE.astat
+echo 2
+exit
+$SGA_BIN scaffold -m $MIN_LENGTH --pe libPE.de -a libPE.astat -o scaffolds.n$MIN_PAIRS.scaf $CTGS
+echo z
+exit
+$SGA_BIN scaffold2fasta -m $MIN_LENGTH -a $GRAPH -o scaffolds.n$MIN_PAIRS.fa -d $SCAFFOLD_TOLERANCE --use-overlap --write-unplaced scaffolds.n$MIN_PAIRS.scaf
+echo e
+exit
