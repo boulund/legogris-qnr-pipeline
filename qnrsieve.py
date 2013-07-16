@@ -10,13 +10,13 @@ logfile.open()
 dir = sys.argv[1]
 _PROFILE = False
 def run():
-    inpath = [dir+'/database/ntsmallest1_plus_qnr.nfa', dir+'/database/ntsmallest2_plus_qnr.nfa', dir+'/database/ntsmallest3_plus_qnr.nfa']
+    #inpath = [dir+'/database/ntsmallest1_plus_qnr.nfa', dir+'/database/ntsmallest2_plus_qnr.nfa', dir+'/database/ntsmallest3_plus_qnr.nfa']
     #inpath = dir+'/database/ntsmallest1_plus_qnr.nfa'
     #inpath = dir+'/database/ntsmaller_plus_qnr.nfa'
     #inpath = dir+'/database/ntsmall_plus_qnr.nfa'
     #inpath = dir+'/database/ntsubset_plus_7_qnr.nfa'
     #inpath = dir+'/database/nt_plus_7_qnr.nfa'
-    #inpath = dir+'/database/qnr_fragmented.nfa'
+    inpath = dir+'/database/qnr_fragmented.nfa'
     #inpath = dir+'/database/india2.fastq.gz'
     #inpath = ['/lagring/boulund/johan_bengtsson/indien-scilife2011/3_120228_AD0J14ACXX_JL30_index20_1.fastq.gz', '/lagring/boulund/johan_bengtsson/indien-scilife2011/3_120228_AD0J14ACXX_JL30_index20_2.fastq.gz']
 
@@ -33,11 +33,11 @@ def run():
                 (sga, {})
             ],     #sieves
             ['', dir+'/fragments.db', dir+'/fragments_passed.db', dir+'/clusters.db'],   #dbs
-            [inpath, dir+'/readfasta.pfa', dir+'/fragments_passed.nfa', dir+'/clusters.pfa'],   #files
+            [inpath, dir+'/readfasta.pfa', dir+'/fragments_passed.nfa', dir+'/clusters.nfa'],   #files
             logfile,
             level,
             #kyoto,
-            0,3
+            2,3
         )
     finally:
         logfile.close()

@@ -24,7 +24,7 @@ class HMMSearch(Sieve):
             'model_path',
             'hmmsearch_out',
             ('numcpu', 4),
-            ('write_only_domain', True), #If output FASTA file should contain entire input sequence or just matching domain.
+            ('write_only_domain', False), #If output FASTA file should contain entire input sequence or just matching domain.
             # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
             # There is little reason not to use heuristics, HMMer has a higher propensity
             # for crashing if not used and it only increases the number of really low
