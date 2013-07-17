@@ -8,9 +8,6 @@ from util import sequence_to_fasta
 from sieve import Sieve
 from util import PathError
 
-def create(params, logfile):
-    return SGAAligner(params, logfile)
-
 class SGAAligner(Sieve):
     def init(self, params):
         self.indbmode = True
@@ -68,3 +65,5 @@ class SGAAligner(Sieve):
                             outfile.write(sequence_to_fasta(''.join([pseq['id'], '_', seq['name'], '_', seq['contig']]), seq['protein']))
             finally:
                 outfile.close()
+
+sieve = SGAAligner

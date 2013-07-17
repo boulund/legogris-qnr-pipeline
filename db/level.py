@@ -30,3 +30,6 @@ class LDB:
     def close(self):
         self.flush()
         del self.db
+
+    def truncate(self):
+        self.db.truncate()

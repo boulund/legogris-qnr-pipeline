@@ -4,6 +4,10 @@ from __future__ import print_function
 import time
 
 class Sieve(object):
+    @classmethod
+    def create(sieve, params, logfile):
+        return sieve(params, logfile)
+
     def __init__(self, params, logfile):
         self.logfile = logfile
         self.init(params)
@@ -48,7 +52,7 @@ def _run_sieves(sieves, dbs, files, logfile, dbengine, startindex=0, endindex=-1
     for i in xrange(startindex, endindex):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
-            sieve = s.create(params, logfile)
+            sieve = s.sieve.create(params, logfile)
             run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbengine)
         elif isinstance(sieves[i], list):
             for j in xrange(len(sieves[i])):

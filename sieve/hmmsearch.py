@@ -11,8 +11,6 @@ from sieve import Sieve
 from parsing.hmmer import HMMERParser
 from util import sequence_to_fasta
 
-def create(params, logfile):
-    return HMMSearch(params, logfile)
 
 class HMMSearch(Sieve):
 
@@ -145,6 +143,9 @@ class HMMSearch(Sieve):
         return sequence_length <= self.max_sequence_length and domain_length <= self.max_domain_length and ((sequence_length >= longseqdef and sequence['dscore'] >= longseqcutoff) or (sequence_length >= self.minlength and sequence_length < longseqdef and sequence['dscore'] > self.classificationfunction(sequence_length)))
 
     ######################### END classify_qnr
+
+
+sieve = HMMSearch
 
 if __name__ == 'main':
     pass
