@@ -92,16 +92,12 @@ class HMMSearch(Sieve):
         call_list = 'hmmsearch --cpu %d --notextw %s -o %s %s %s' % (self.numcpu, heurflag, self.hmmsearch_out, self.model_path, infilepath)
         hmmsearch = shlex.split(call_list)
         # Run hmmsearch
-        try:
-            output = subprocess.Popen(hmmsearch, stdin=subprocess.PIPE,
-                                        stderr=subprocess.PIPE).communicate()
-            if "Error: Failed to open hmm file" in output[1] or 'Error: File existence/permissions problem in trying to open HMM file' in output[1]:
-                logfile.write("CATASTROPHIC: Could not open HMM: "+self.model_path+"\n")
-                exit(1)
-            logfile.write("Finished hmmsearch on file "+infilepath+"\n")
-        except OSError, e:
-            logfile.write("Could not open one of hmmsearch or "+infilepath+"\n")
-            raise e
+        output = subprocess.Popen(hmmsearch, stdin=subprocess.PIPE,
+                                    stderr=subprocess.PIPE).communicate()
+        if "Error: Failed to open hmm file" in output[1] or 'Error: File existence/permissions problem in trying to open HMM file' in output[1]:
+            logfile.write("CATASTROPHIC: Could not open HMM: "+self.model_path+"\n")
+            exit(1)
+        logfile.write("Finished hmmsearch on file "+infilepath+"\n")
         logfile.flush()
 
         # Output some more details for the log

@@ -10,9 +10,6 @@ from parsing.fastq import FASTQParser
 from util.translator import translate_sequence
 from sieve import Sieve
 
-def create(params, logfile):
-    return FastaReader(params, logfile)
-
 class FastaReader(Sieve):
     def init(self, params):
         self.outdbmode = True
@@ -52,3 +49,4 @@ class FastaReader(Sieve):
         finally:
             outfile.close()
 
+sieve = FastaReader

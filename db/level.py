@@ -32,4 +32,6 @@ class LDB:
         del self.db
 
     def truncate(self):
-        self.db.truncate()
+        for x in self.db.RangeIter(include_value=False):
+            self.db.Delete(x)
+
