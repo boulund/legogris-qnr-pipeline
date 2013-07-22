@@ -14,11 +14,8 @@ from util import sequence_to_fasta
 
 class HMMSearch(Sieve):
 
-    def init(self, params):
-        self.indbmode = True
-        self.outdbmode = True
-        self.name = 'HMMer search'
-        self.param_names = [
+    def __init__(self, params, logfile):
+        param_names = [
             'model_path',
             'hmmsearch_out',
             ('numcpu', 4),
@@ -37,11 +34,11 @@ class HMMSearch(Sieve):
             ('max_sequence_length', 21844000),
             ('classificationfunction', lambda L: self.classifyK*L + self.classifyM)
         ]
+        Sieve.__init__(self, params, logfile, name='HMMer search', param_names=param_names)
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         self.hmmsearch(infilepath)
-
         result = HMMERParser(self.logfile).parse_file(inprotdb, self.hmmsearch_out, self.minscore)
 
         #Put result in db and sequences in outfile

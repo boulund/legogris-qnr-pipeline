@@ -10,11 +10,8 @@ from sieve import Sieve
 from util import PathError
 
 class SGAAligner(Sieve):
-    def init(self, params):
-        self.indbmode = True
-        self.outdbmode = True
-        self.name = 'SGA Aligner'
-        self.param_names = [
+    def __init__(self, params, logfile):
+        param_names = [
             ('parse_output', True),
             ('result_out_path', ''),
             ('max_edges', 400),
@@ -26,6 +23,7 @@ class SGAAligner(Sieve):
             ('resolve_small', 500),
             ('error_rate', 0.02)
         ]
+        Sieve.__init__(self, params, logfile, name='SGA Aligner', param_names=param_names)
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):

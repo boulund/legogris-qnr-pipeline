@@ -4,13 +4,14 @@ from __future__ import print_function
 import time
 
 class Sieve(object):
-    @classmethod
-    def create(sieve, params, logfile):
-        return sieve(params, logfile)
+    """Abstract base-class for gene-filtering sieve implementations.
 
-    def __init__(self, params, logfile):
+    Subclasses must define a member param_names
+    """
+    def __init__(self, params, logfile, name, param_names):
+        self.param_names = param_names
+        self.name = name
         self.logfile = logfile
-        self.init(params)
         for param in self.param_names:
             if isinstance(param, str):
                 if not param in params:
@@ -28,9 +29,9 @@ def run_sieve(sieve, paths, logfile, dbengine):
     (indbpath, infilepath, outdbpath, outfilepath) = paths
     indnadb = inprotdb =  outdnadb =  outprotdb = None
     try:
-        if hasattr(sieve, 'indbmode'):
+        if indbpath:
             (indnadb, inprotdb) = dbengine.open(indbpath, truncate=False)
-        if hasattr(sieve, 'outdbmode'):
+        if outdbpath:
             (outdnadb, outprotdb) = dbengine.open(outdbpath, truncate=True)
         logfile.writeline('Start: %s at %s' % (sieve.name, time.asctime(time.localtime())))
         return sieve.run(indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath)
@@ -52,7 +53,7 @@ def _run_sieves(sieves, dbs, files, logfile, dbengine, startindex=0, endindex=-1
     for i in xrange(startindex, endindex):
         if isinstance(sieves[i], tuple):
             (s, params) = sieves[i]
-            sieve = s.sieve.create(params, logfile)
+            sieve = s.sieve(params, logfile)
             run_sieve(sieve, (dbs[i], files[i], dbs[i+1], files[i+1]), logfile, dbengine)
         elif isinstance(sieves[i], list):
             for j in xrange(len(sieves[i])):

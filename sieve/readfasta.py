@@ -11,10 +11,8 @@ from util.translator import translate_sequence
 from sieve import Sieve
 
 class FastaReader(Sieve):
-    def init(self, params):
-        self.outdbmode = True
-        self.name = 'FASTA translator'
-        self.param_names = [('item_limit', 0)]
+    def __init__(self, params, logfile):
+        Sieve.__init__(self, params, logfile, name='FASTA translator', param_names=[('item_limit', 0)])
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         startid = 0
