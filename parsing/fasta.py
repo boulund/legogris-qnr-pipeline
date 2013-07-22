@@ -31,7 +31,3 @@ class FASTAParser:
                 yield { 'id': id.strip(), 'desc': desc.strip(), 'dna': ''.join(tempseq) }
         except OSError:
             raise PathError(''.join(['ERROR: cannot open', refseqpath]))
-
-    #Returns list of sequences
-    def fasta_to_list(self, filename):
-        return [f for f in self.parse_fasta(filename)]

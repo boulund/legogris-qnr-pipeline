@@ -1,3 +1,4 @@
+from itertools import izip_longest
 
 def fixfasta(sequence):
     """
@@ -36,6 +37,18 @@ def sequence_to_fasta(id, sequence):
     Returns the supplied `id` and `sequence` (both strings) as a sequence string in FASTA format.
     """
     return fixfasta(''.join(['>', id, '\n', sequence, '\n']))
+
+def grouper(iterable, n, fillvalue=None):
+    """
+    Partition data into fixed-length tuples. Recipe from itertools docs.
+
+    >>> grouper('ABCDEFG', 3, 'x')
+    [('A', 'B', 'C'),
+    ('D', 'E', 'F'),
+    ('G', 'x', 'x')]
+    """
+    args = [iter(iterable)] * n
+    return izip_longest(fillvalue=fillvalue, *args)
 
 class PathError(Exception):
     """Raised when an invalid or otherwise not usable path has been supplied."""

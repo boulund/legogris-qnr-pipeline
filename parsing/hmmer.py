@@ -7,24 +7,28 @@ import json
 
 from util import PathError, ParseError
 
-TMPDIR = "./pipeline_data/"
-
 class HMMERParser:
     def __init__(self, logfile):
         self.logfile = logfile
 
     #Reinserts sequences with hmm score and dscore in indb
-    def parse_file(self, indb, infilepath, minscore):
-        logfile = self.logfile
-        score_id_tuples = []
-        # Open file for reading
-        sequences = []
+    def parse_file(self, indb, infilepath):
+        """
+        Parses hmmsearch output file located at `infilepath`. Each resulting sequence is retrieved from `indb` and reinserted with the new attributes:
+            * score (float): The score against the model for the overall sequence.
+            * dscore (float): The score agains the model for the best domain.
+            * dstart (int): Start index for the best domain.
+            * dfinish (int): End index for the best domain.
+
+        Returns:
+            Generator function with sequences and their scores and indices.
+
+        Raises:
+            IOError, PathError, ParseError, ValueError
+        """
+        self.logfile.write("Parsing "+infilepath+"\n")
         try:
-            # Parse the hmmsearch output file -- Extract hits above minscore (0)
-            logfile.write("Parsing "+infilepath+"\n")
-            parsed = _parse_hmmsearch_output(infilepath,minscore)
-            seqs, dbpath = parsed # Unpack parsed information
-            for pseq in seqs:
+            for pseq in _parse_hmmsearch_output(infilepath):
                 seq = json.loads(indb.get(pseq['id']))
                 seq['score'] = pseq['score']
                 seq['dscore'] = pseq['dscore']
@@ -32,23 +36,17 @@ class HMMERParser:
                 seq['dfinish'] = pseq['dfinish']
                 indb.put(pseq['id'], json.dumps(seq))
                 seq['id'] = pseq['id']
-                sequences.append(seq)
-            return sequences
+                yield seq
 
         except IOError:
-            logfile.write("Could not open file for reading: "+infilepath+"\n")
-            logfile.write("Continuing with next file...\n")
+            self.logfile.write("Could not open file for reading: "+infilepath+"\n")
+            self.logfile.write("Continuing with next file...\n")
         except PathError as e:
-            logfile.write(e.message+"\n")
+            self.logfile.write(e.message+"\n")
         except ParseError as e:
-            logfile.write(e.message+"\n")
-        return ([], score_id_tuples)
+            self.logfile.write(e.message+"\n")
 
-
-##-----------------------------------------------##
-##           PARSE HMMSEARCH OUTPUT              ##
-##-----------------------------------------------##
-def _parse_hmmsearch_output(filename,min_score=0):
+def _parse_hmmsearch_output(filename):
     '''
     Parses and retrieves sequence score, maximal domain score
     and sequence IDs from an hmmsearch output file.
@@ -57,7 +55,6 @@ def _parse_hmmsearch_output(filename,min_score=0):
 
 
         file  filename string to hmmsearch output
-        min_score  a float with minimum best domain score threshold
 
     Returns::
 
@@ -74,13 +71,12 @@ def _parse_hmmsearch_output(filename,min_score=0):
             hmmsearch output format (i.e. does not begin
             with '# hmmsearch ::').
         ValueError  raised if no sequence in the hmmsearch output
-            is found with score >= min_score.
+            is found.
     '''
 
     from os import path
     import re
 
-    score_id_tuples = []
     seqs = {}
 
     file = open(filename,"r")
@@ -108,12 +104,11 @@ def _parse_hmmsearch_output(filename,min_score=0):
             if found is not None:
                 seq = {}
                 seq['score'] = float(found.group(1))
-                #seq['dscore'] = float(found.group(2))
-                dscore = float(found.group(2))
+                #dscore = float(found.group(2)), this is fetched in the second pass
+                seq['dbpath'] = dbpath
                 seq['id'] = found.group(3)
-                if dscore >= min_score:
-                    seqs[seq['id']] = seq
-                    continue
+                seqs[seq['id']] = seq
+                continue
 
         #Second, get alignment info
         for line in file:
@@ -134,7 +129,4 @@ def _parse_hmmsearch_output(filename,min_score=0):
 
     if seqs == {}:
         raise ValueError
-    else:
-        return (seqs.values(),dbpath)
-############## END  parse_hmmsearch_output
-
+    return seqs.values()
