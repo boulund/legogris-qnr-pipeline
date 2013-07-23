@@ -13,16 +13,12 @@ from parsing.hmmer import HMMERParser
 from util import sequence_to_fasta
 
 class HMMSearch(Sieve):
-<<<<<<< local
-    def __init__(self, params, logfile):
-        param_names = [
-=======
     """
-    Performs HMMer hmmsearch on input file and assigns sequence and domain scores.
+    Perform HMMER hmmsearch on input file and assigns sequence and domain scores.
     Optionally filters output where only sequences whose domain score pass a given classification function pass.
     """
 
-    def init(self, params):
+    def __init__(self, params, logfile):
         """
         Mandatory parameters:
             * model_path (str): Path to .hmm model file to use for hmmsearch.
@@ -42,11 +38,7 @@ class HMMSearch(Sieve):
             * classifyM (float, -7.89): Parameter to the default `classificationfunction`.
         """
 
-        self.indbmode = True
-        self.outdbmode = True
-        self.name = 'HMMer search'
-        self.param_names = [
->>>>>>> other
+        param_names = [
             'model_path',
             ('hmmsearch_out', 'hmmsearch_out'),
             ('numcpu', 4),
@@ -62,7 +54,7 @@ class HMMSearch(Sieve):
             ('classifyM', -7.89),
             ('classificationfunction', lambda L: self.classifyK*L + self.classifyM)
         ]
-        Sieve.__init__(self, params, logfile, name='HMMer search', param_names=param_names)
+        Sieve.__init__(self, params, logfile, name='HMMer hmmsearch', param_names=param_names)
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
@@ -99,9 +91,12 @@ class HMMSearch(Sieve):
             self.logfile.writeline("%d sequences passed the classification function." % passed_count)
             outfile.close()
 
-    #Runs hmmsearch on FASTA file, store HMMer output in its own format.
-    #Needs to be parsed by Parser.
     def hmmsearch(self, infilepath):
+        """
+        Run hmmsearch on FASTA file, store HMMER output in its own format.
+        Use parameters passed on sieve initialization.
+        Output can be parsed by `parsing.hmmer`.
+        """
         logfile = self.logfile
 
         heurflag = '' if self.use_heuristics else '--max'
@@ -134,7 +129,7 @@ class HMMSearch(Sieve):
 
     def classify_sequence(self, sequence):
         """
-        Classifies a sequence as interesting or not.
+        Classify a sequence as interesting or not.
 
         Uses the domain score and a user defined function
         to classify a given sequence as putative or not.
@@ -144,8 +139,7 @@ class HMMSearch(Sieve):
             sequence The sequence to classify
 
         Returns:
-            classification  a boolean determining whether it should be classified
-                            according to the model or not.
+            classification (bool)  Whether input should be classified according to the model or not.
 
         """
         sequence_length = len(sequence['protein'])

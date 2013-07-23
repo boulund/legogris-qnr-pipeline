@@ -11,35 +11,31 @@ from util.translator import translate_sequence
 from sieve import Sieve
 
 class FastaReader(Sieve):
-<<<<<<< local
-    def __init__(self, params, logfile):
-        Sieve.__init__(self, params, logfile, name='FASTA translator', param_names=[('item_limit', 0)])
-=======
     """
     Reads in raw nucleotide sequences and translates them to protein sequences.
     FASTA and FASTQ input formats are supported in raw or gzip-compressed files.
 
-    >>>
-    >id desc
-    DNA
+    FASTA input::
 
-    DNA Database:
-    'nid' : 'DNA'
+        >id desc
+        DNA
 
-    Protein Database:
+    DNA Database output::
+
+        'nid' : 'DNA'
+
+    Protein Database output::
+
         'nid_X' : JSON Serialization of translation output from `translator.translate_sequence` for frame X (0 <= X <= 5).
 
     Translated protein sequences for all six frames are written to output file in FASTA format.
     """
-    def init(self, params):
+    def __init__(self, params, logfile):
         """
         Optional parameters:
             * item_limit (int, default 0): Maximum number of sequences to parse. 0 means no limit.
         """
-        self.outdbmode = True
-        self.name = 'FASTA translator'
-        self.param_names = [('item_limit', 0)]
->>>>>>> other
+        Sieve.__init__(self, params, logfile, name='FASTA translator', param_names=[('item_limit', 0)])
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         startid = 0

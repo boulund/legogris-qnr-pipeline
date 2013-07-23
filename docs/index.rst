@@ -9,11 +9,10 @@ Welcome to SofT's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 3
+    :maxdepth: 3
 
-   sieve
-   util
-   parsing
+    installation
+    reference
 
 
 

@@ -32,12 +32,7 @@ class Sieve(object):
         for param in self.param_names:
             if isinstance(param, str):
                 if not param in params:
-<<<<<<< local
-                    raise KeyError('Missing mandatory parameter %s for sieve %s' % (param, self.name))
-                param_name = param
-=======
                     raise Exception('Missing mandatory parameter %s for sieve %s' % (param, self.name))
->>>>>>> other
             else:
                 setattr(self, param[0], param[1]) #Set default value
         for (param_name, value) in params.items():

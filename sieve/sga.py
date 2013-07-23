@@ -10,16 +10,12 @@ from sieve import Sieve
 from util import PathError
 
 class SGAAligner(Sieve):
-<<<<<<< local
-    def __init__(self, params, logfile):
-        param_names = [
-=======
     """
-    Runs the String Graph Assembler pipeline (preprocess, correct, filter, fm-merge, rmdup, overlap, assemble).
-    Outputs the assembled contigs.
+    Run the String Graph Assembler pipeline (preprocess, correct, filter, fm-merge, rmdup, overlap, assemble).
+    Output the assembled contigs.
     """
 
-    def init(self, params):
+    def __init__(self, params, logfile):
         """
         Optional parameters:
             * parse_output (bool, True): Whether the sieve should write its own output file.
@@ -34,9 +30,8 @@ class SGAAligner(Sieve):
             * resolve_small (int, 500)
             * error_rate (float, 0.02)
         """
-        self.name = 'SGA Aligner'
-        self.param_names = [
->>>>>>> other
+
+        param_names = [
             ('parse_output', True),
             ('max_edges', 400),
             ('numcpu', 4),
@@ -47,7 +42,7 @@ class SGAAligner(Sieve):
             ('resolve_small', 500),
             ('error_rate', 0.02)
         ]
-        Sieve.__init__(self, params, logfile, name='SGA Aligner', param_names=param_names)
+        Sieve.__init__(self, params, logfile, name='SGA', param_names=param_names)
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
