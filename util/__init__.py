@@ -1,27 +1,21 @@
-##-----------------------------------------------##
-##            FIX FASTA FORMATTING               ##
-##-----------------------------------------------##
-def fixfastas(sequences):
-    '''
-    Takes a sequence and tries to correct its
+from itertools import izip_longest
+
+def fixfasta(sequence):
+    """
+    Take a FASTA-formatted sequence and tries to correct its
     formatting by splitting it on lines of maximum length 80.
 
-    Input::
+    Args::
 
-        sequences   FASTA sequence, in one
-                    complete string with \n markers
-                    between identifier line and sequence.
+        sequence (str)  FASTA sequence, in one
+                        complete string with \\n markers
+                        between identifier line and sequence.
 
     Returns::
 
-        outsequences   sequence with hopefully
-                    better formatting.
-
-    Errors::
-
-        (none)
-    '''
-def fixfasta(sequence):
+        sequence (str)  Sequence with hopefully
+                        better formatting.
+    """
 
     from math import ceil
 
@@ -38,23 +32,33 @@ def fixfasta(sequence):
     else:
         return sequence
 
-############## END fixfasta
-
 def sequence_to_fasta(id, sequence):
+    """
+    Returns the supplied `id` and `sequence` (both strings) as a sequence string in FASTA format.
+    """
     return fixfasta(''.join(['>', id, '\n', sequence, '\n']))
 
-##-----------------------------------------------##
-##                CUSTOM EXCEPTIONS              ##
-##-----------------------------------------------##
+def grouper(iterable, n, fillvalue=None):
+    """
+    Partition data into fixed-length tuples. Recipe from itertools docs.
 
-# PathError       General error with path
+    >>> grouper('ABCDEFG', 3, 'x')
+    [('A', 'B', 'C'),
+    ('D', 'E', 'F'),
+    ('G', 'x', 'x')]
+    """
+    args = [iter(iterable)] * n
+    return izip_longest(fillvalue=fillvalue, *args)
+
 class PathError(Exception):
+    """Raised when an invalid or otherwise not usable path has been supplied."""
     def __init__(self,message):
         self.message = message
     def __str__(self):
         return repr(self.message)
 
 class ParseError(Exception):
+    """Raised when an error has occured while parsing an input string or file."""
     def __init__(self,message):
         self.message = message
     def __str__(self):

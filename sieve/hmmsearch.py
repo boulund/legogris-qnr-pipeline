@@ -5,14 +5,18 @@ import subprocess
 from datetime import date
 import time
 import json
+from itertools import ifilter
 
 from util import translator
 from sieve import Sieve
 from parsing.hmmer import HMMERParser
 from util import sequence_to_fasta
 
-
 class HMMSearch(Sieve):
+<<<<<<< local
+    def __init__(self, params, logfile):
+        param_names = [
+=======
     """
     Performs HMMer hmmsearch on input file and assigns sequence and domain scores.
     Optionally filters output where only sequences whose domain score pass a given classification function pass.
@@ -42,6 +46,7 @@ class HMMSearch(Sieve):
         self.outdbmode = True
         self.name = 'HMMer search'
         self.param_names = [
+>>>>>>> other
             'model_path',
             ('hmmsearch_out', 'hmmsearch_out'),
             ('numcpu', 4),
@@ -57,18 +62,19 @@ class HMMSearch(Sieve):
             ('classifyM', -7.89),
             ('classificationfunction', lambda L: self.classifyK*L + self.classifyM)
         ]
+        Sieve.__init__(self, params, logfile, name='HMMer search', param_names=param_names)
 
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         self.hmmsearch(infilepath)
-
-        result = HMMERParser(self.logfile).parse_file(inprotdb, self.hmmsearch_out, self.minscore)
+        parser = HMMERParser(self.logfile)
+        seqs = parser.parse_file(inprotdb, self.hmmsearch_out)
 
         #Put result in db and sequences in outfile
         passed_count = 0
         outfile = open(outfilepath, 'w')
         try:
-            for sequence in result:
+            for sequence in ifilter(lambda x: x['dscore'] >= self.minscore, seqs):
                 if self.classify_sequence(sequence):
                     id = str(sequence.pop('id', None))
                     outprotdb.put(id, json.dumps(sequence))
@@ -90,7 +96,7 @@ class HMMSearch(Sieve):
                     outfile.write(sequence_to_fasta(id, seq))
                     passed_count += 1
         finally:
-            self.logfile.writeline("%d / %d sequences passed the classification function." % (passed_count, len(result)))
+            self.logfile.writeline("%d sequences passed the classification function." % passed_count)
             outfile.close()
 
     #Runs hmmsearch on FASTA file, store HMMer output in its own format.

@@ -1,18 +1,31 @@
-from util import PathError
-from itertools import izip_longest
+from util import PathError, grouper
 import zlib
 
 class FASTQParser:
     def __init__(self, logfile, gzip=False):
+        """
+        Kwargs:
+            gzip (bool): If set to True, all calls to parse will first attempt to perform gzip decompression on the file.
+        """
         self.logfile = logfile
         self.gzip = gzip
 
     def parse(self, filename):
+        """Perform `parse_gzip` or `parse_fastq` depending on if gzip decompression is enabled or not."""
         if self.gzip:
             return self.parse_gzip(filename)
         return self.parse_fastq(filename)
 
     def parse_gzip(self, filename):
+        """
+        Translate input in file at path defined by `filename` from FASTQ format after gzip decompression.
+
+        Returns:
+            List of dictionaries with the following keys:
+                * id (str): Identifier for the sequence.
+                * desc (str, optional): If the original identifier contains at least one space, desc will be the string after the last one.
+                * dna (str): The sequence DNA string.
+        """
         gzfile = open(filename, 'rb')
         d = zlib.decompressobj(16+zlib.MAX_WBITS)
         eof = False
@@ -33,21 +46,33 @@ class FASTQParser:
             if eof:
                 break
             for ls in grouper(slines, 4):
-                yield self.parse_lines(ls)
+                yield self._parse_lines(ls)
 
     #for iterating
     def parse_fastq(self, filename):
+        """
+        Translate input in file at path defined by `filename` from FASTQ format.
+
+        Returns:
+            List of dictionaries with the following keys:
+                * id (str): Identifier for the sequence.
+                * desc (str, optional): If the original identifier contains at least one space, desc will be the string after the last one.
+                * dna (str): The sequence DNA string.
+
+        Raises:
+            PathError
+        """
         id = ''
         desc = ''
         tempseq = []
         try:
             seqfile = open(filename,'r')
             for lines in grouper(seqfile, 4):
-                yield self.parse_lines(lines)
+                yield self._parse_lines(lines)
         except OSError:
             raise PathError(''.join(['ERROR: cannot open', refseqpath]))
 
-    def parse_lines(self, lines):
+    def _parse_lines(self, lines):
         idline = lines[0]
         dna = lines[1]
         #optional: quality = lines[3]
@@ -58,8 +83,3 @@ class FASTQParser:
             id = lines[0][1::]
             return { 'id': id.strip(), 'dna': dna.strip() }
 
-#Collect data into fixed-length chunks or blocks. Recipe from itertools docs.
-# grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
-def grouper(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue, *args)

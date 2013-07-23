@@ -6,10 +6,24 @@ class FASTAParser:
 
     #TODO: gzip like FASTQ
     def parse(self, filename):
+        """
+        Calls parse_fasta.
+        """
         return self.parse_fasta(filename)
 
-    #for iterating
     def parse_fasta(self, filename):
+        """
+        Translate input in file at path defined by `filename` from FASTA format.
+
+        Returns:
+            Generator function of dictionaries with the following keys:
+                * id (str): Identifier for the sequence.
+                * desc (str, optional): If the original identifier contains at least one space, desc will be the string after the last one.
+                * dna (str): The sequence DNA string.
+
+        Raises:
+            PathError
+        """
         id = ''
         desc = ''
         tempseq = []
@@ -31,7 +45,3 @@ class FASTAParser:
                 yield { 'id': id.strip(), 'desc': desc.strip(), 'dna': ''.join(tempseq) }
         except OSError:
             raise PathError(''.join(['ERROR: cannot open', refseqpath]))
-
-    #Returns list of sequences
-    def fasta_to_list(self, filename):
-        return [f for f in self.parse_fasta(filename)]
