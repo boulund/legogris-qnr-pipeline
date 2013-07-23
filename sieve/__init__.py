@@ -15,14 +15,11 @@ class Sieve(object):
             if isinstance(param, str):
                 if not param in params:
                     raise Exception('Missing mandatory parameter %s for sieve %s' % (param, self.name))
-                param_name = param
             else:
-                param_name = param[0]
-                default_value = param[1]
-            if param_name in params:
-                setattr(self, param_name, params[param_name])
-            else:
-                setattr(self, param_name, default_value)
+                setattr(self, param[0], param[1]) #Set default value
+        for (param_name, value) in params.items():
+            setattr(self, param_name, value)
+
 
 def run_sieve(sieve, paths, logfile, dbengine):
     (indbpath, infilepath, outdbpath, outfilepath) = paths

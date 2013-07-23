@@ -13,28 +13,48 @@ from util import sequence_to_fasta
 
 
 class HMMSearch(Sieve):
+    """
+    Performs HMMer hmmsearch on input file and assigns sequence and domain scores.
+    Optionally filters output where only sequences whose domain score pass a given classification function pass.
+    """
 
     def init(self, params):
+        """
+        Mandatory parameters:
+            * model_path (str): Path to .hmm model file to use for hmmsearch.
+        Optional parameters:
+            * hmmsearch_out(str, 'hmmsearch_out'): Path to temporary hmmsearch output file.
+            * numcpu (int, 4): Number of threads to use for hmmsearch
+            * write_only_domain (bool, True): If output FASTA file should contain entire input sequence or just matching domain.
+            * use_heuristics (bool, True): Heuristics on/off;  there is little reason not to use heuristics, HMMer has a higher propensity for crashing if not used and it only increases the number of really low scoring hits anyway,
+            * longseqdef (int, 151): Sequences longer than this will be considered "long" and are thus compared to `longseqcutoff` instead of `classificationfunction`.
+            * longseqcutoff (float, 109.64): The classification cutoff (minimum domain score) for long sequences. That is, "long" sequences will only pass if they have a score higher than this.
+            * minscore (int, 0): Minimum domain score, regardless of length, to pass a sequence.
+            * min_sequence_length (int, 20): Only consider sequences longer than this.
+            * max_domain_length (int, 21844): Do not include sequences where the maximum domain is longer than this.
+            * max_sequence_length (int, 21844000): Do not include sequences longer than this.
+            * classificationfunction (function, lambda L: self.classifyK*L + self.classifyM): Classification function. The domain score of sequences shorter than `longseqdef` are compared to the result of this function, with the sequence length fed as the parameter. Only those with a domain score higher will pass.
+            * classifyK (float, 0.7778): Parameter to the default `classificationfunction`.
+            * classifyM (float, -7.89): Parameter to the default `classificationfunction`.
+        """
+
         self.indbmode = True
         self.outdbmode = True
         self.name = 'HMMer search'
         self.param_names = [
             'model_path',
-            'hmmsearch_out',
+            ('hmmsearch_out', 'hmmsearch_out'),
             ('numcpu', 4),
-            ('write_only_domain', False), #If output FASTA file should contain entire input sequence or just matching domain.
-            # Heuristics on/off; --max means no heuristics (max sensitivity), empty full heuristics
-            # There is little reason not to use heuristics, HMMer has a higher propensity
-            # for crashing if not used and it only increases the number of really low
-            ('use_heuristics', False),
-            ('classifyK', 0.7778),
-            ('classifyC', 109.64), #the classification cutoff (minimum score) for long sequence. defparam = 75
-            ('classifyM', -7.89),
-            ('classifyD', 150.64), #the definition for long sequences. defparam = 85
+            ('write_only_domain', True),
+            ('use_heuristics', True),
+            ('longseqdef', 151),
+            ('longseqcutoff', 109.64),
             ('minscore', 0),
-            ('minlength', 20), #minimum fragment length allowed.
+            ('min_sequence_length', 20), #minimum fragment length allowed.
             ('max_domain_length', 21844),
             ('max_sequence_length', 21844000),
+            ('classifyK', 0.7778),
+            ('classifyM', -7.89),
             ('classificationfunction', lambda L: self.classifyK*L + self.classifyM)
         ]
 
@@ -78,7 +98,7 @@ class HMMSearch(Sieve):
     def hmmsearch(self, infilepath):
         logfile = self.logfile
 
-        heurflag = '--max' if self.use_heuristics else ''
+        heurflag = '' if self.use_heuristics else '--max'
         hmmsearch_outdir = ''
 
         t = time.asctime(time.localtime())
@@ -106,40 +126,29 @@ class HMMSearch(Sieve):
         logfile.line()
         logfile.flush()
 
-    ##---------------------------------------------------------------------------##
-    ##                      CLASSIFY SEQUENCE                                    ##
-    ##---------------------------------------------------------------------------##
     def classify_sequence(self, sequence):
         """
-        Classifies a sequence as Qnr or not.
+        Classifies a sequence as interesting or not.
 
-        Uses the domain_score and a user defined function
-        to classify a given sequence as putative Qnr or not.
-        Will always return false for fragments sorter that min_length.
+        Uses the domain score and a user defined function
+        to classify a given sequence as putative or not.
+        Will always return false for fragments outside the range of min_sequence_length and max_sequence_length and for domains longer than max_domain_length.
 
-        Input::
+        Args:
+            sequence The sequence to classify
 
-            sequence_length The sequence to classify
-
-        Returns::
-
+        Returns:
             classification  a boolean determining whether it should be classified
-                            recording to the model or not.
+                            according to the model or not.
 
-        Errors::
-
-            (none)
         """
         sequence_length = len(sequence['protein'])
-        longseqcutoff = self.classifyC
-        longseqdef = self.classifyD
         domain_length = sequence['dfinish']-sequence['dstart']+1
-        # Pretty self-explanatory. Has a range in which the classification
-        # function is used.
-        return sequence_length <= self.max_sequence_length and domain_length <= self.max_domain_length and ((sequence_length >= longseqdef and sequence['dscore'] >= longseqcutoff) or (sequence_length >= self.minlength and sequence_length < longseqdef and sequence['dscore'] > self.classificationfunction(sequence_length)))
-
-    ######################### END classify_qnr
-
+        return sequence_length <= self.max_sequence_length and domain_length <= self.max_domain_length and sequence_length >= self.min_sequence_length and \
+            ( \
+                (sequence_length >= self.longseqdef and sequence['dscore'] >= self.longseqcutoff) or \
+                (sequence_length < self.longseqdef and sequence['dscore'] > self.classificationfunction(sequence_length)) \
+            )
 
 sieve = HMMSearch
 

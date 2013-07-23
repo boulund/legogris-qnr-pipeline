@@ -10,13 +10,29 @@ from sieve import Sieve
 from util import PathError
 
 class SGAAligner(Sieve):
+    """
+    Runs the String Graph Assembler pipeline (preprocess, correct, filter, fm-merge, rmdup, overlap, assemble).
+    Outputs the assembled contigs.
+    """
+
     def init(self, params):
-        self.indbmode = True
-        self.outdbmode = True
+        """
+        Optional parameters:
+            * parse_output (bool, True): Whether the sieve should write its own output file.
+
+        Optional parameters passed to SGA:
+            * max_edges (int, 400)
+            * numcpu (int, 4)
+            * min_branch_length (int, 35)
+            * min_merge_overlap (int, 15)
+            * min_assembly_overlap (int, 5)
+            * max_gap_divergence (int, 0)
+            * resolve_small (int, 500)
+            * error_rate (float, 0.02)
+        """
         self.name = 'SGA Aligner'
         self.param_names = [
             ('parse_output', True),
-            ('result_out_path', ''),
             ('max_edges', 400),
             ('numcpu', 4),
             ('min_branch_length', 35),
