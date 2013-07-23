@@ -1,0 +1,11 @@
+Dependencies:
+* Python 2.6
+* HMMER >= v3.0 (http://hmmer.janelia.org/)
+* String Graph Assembler >= v0.10.6 (https://github.com/jts/sga)
+
+Database engine. Either of:
+* Google leveldb >= 1.12 (Recommended)
+* Kyoto Cabinet with Python bindings (http://fallabs.com/kyotocabinet/pythonlegacydoc/)
+
+For development, Cython 0.14.1 is used to build the pyx file(s).
+
