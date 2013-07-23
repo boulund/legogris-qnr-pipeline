@@ -1,8 +1,5 @@
 Parsing
 =======
-.. automodule:: parsing
-    :members:
-    :undoc-members:
 
 .. automodule:: parsing.fasta
     :members:
