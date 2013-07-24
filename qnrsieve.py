@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import sys
 from util.logger import Logger
-from sieve import run_sieves, readfasta, hmmsearch, blastclust, sga, multirunner
+from sieve import run_sieves, dnareader, hmmsearch, blastclust, sga, multirunner
 from db import level
 
 logfile = Logger('qnrsearch.log')
@@ -31,7 +31,7 @@ def run():
     try:
         run_sieves(
             [
-                (readfasta, {'item_limit': 0}),
+                (dnareader, {'item_limit': 0}),
                 (hmmsearch, {'model_path': dir+'/model.hmm', 'hmmsearch_out': dir+'/hmmsearch_out', 'write_only_domain': True}),
                 #[
                 #    (hmmsearch, {'model_path': dir+'/model.hmm', 'hmmsearch_out': dir+'/hmmsearch_out'}),
@@ -41,7 +41,7 @@ def run():
                 (sga, {'error_rate': 0.01, 'min_assembly_overlap': 30, 'min_merge_overlap': 25, 'resolve_small': 10 })
             ],     #sieves
             ['', dir+'/fragments.db', dir+'/fragments_passed.db', dir+'/clusters.db'],   #dbs
-            [inpath, dir+'/readfasta.pfa', dir+'/fragments_passed.nfa', dir+'/clusters.nfa'],   #files
+            [inpath, dir+'/dnareader.pfa', dir+'/fragments_passed.nfa', dir+'/clusters.nfa'],   #files
             logfile,
             level,
             #kyoto,

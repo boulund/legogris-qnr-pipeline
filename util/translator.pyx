@@ -509,6 +509,18 @@ GT['G']['G']['X'] = 'G'
 GT['G']['G']['N'] = 'G'
 
 cpdef bytes frame_sequence(char *sequence, int frame):
+    """
+    frame_sequence(sequence, frame)
+    Align the supplied sequence to the given reading frame.
+
+    Args:
+        * sequence (str): Sequence to align
+        * frame (int): Reading frame, meaning the index to start from. Frame 0-2 simply starts the sequence at the given index, while frames 3-5 returns reading of `frame`-3 for the reverse complement of `sequence`.
+
+    Returns:
+        sequence (str)
+    """
+
     cdef int i, j, k, l
     l = len(sequence)
     cdef char c
@@ -538,8 +550,28 @@ cpdef bytes frame_sequence(char *sequence, int frame):
         free(dseq)
 
 
-#Translates the supplied DNA string in all 6 reading frames and stores the result in a FASTA format text file as well as in serialized JSON in a supplied key/value store.
-def translate_sequence(char *id, char *name, char *desc, char *sequence):
+cpdef translate_sequence(char *id, char *name, char *desc, char *sequence):
+    """
+    translate_sequence(id, name, desc, sequence)
+
+    Translate the supplied DNA string in all 6 reading frames and return result as FASTA format as well as a serialized JSON object. In this version, microbial table 11 is used for translation. Ambiguity codes are handled.
+
+    Args:
+        * id (str): Sequence ID. Used as identifier in FASTA file.
+        * name (str): Sequence name. Saved in JSON object.
+        * desc (str): Sequence description. Saved in JSON object.
+        * sequence (str): The nucleotide sequence to translate.
+
+    Returns:
+        sequences (list): List of protein translations in all six reading frames. Each item is a tuple::
+
+            (frame, json, fasta)
+
+        * frame (int): Reading frame
+        * json (str): JSON-serialized object with keys `protein`, `name`, `description` and `frame`.
+        * fasta (str): FASTA formatted string with `id`_`frame` as identifier.
+
+    """
     global GT
     cdef char x = ord('X')
     cdef int i, j, frame, k, l

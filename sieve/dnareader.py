@@ -10,7 +10,7 @@ from parsing.fastq import FASTQParser
 from util.translator import translate_sequence
 from sieve import Sieve
 
-class FastaReader(Sieve):
+class DNAReader(Sieve):
     """
     Reads in raw nucleotide sequences and translates them to protein sequences.
     FASTA and FASTQ input formats are supported in raw or gzip-compressed files.
@@ -70,4 +70,4 @@ class FastaReader(Sieve):
         finally:
             outfile.close()
 
-sieve = FastaReader
+sieve = DNAReader

@@ -5,14 +5,28 @@ from util.combinations import combinations
 from sieve import Sieve
 
 class MultiRunner(Sieve):
-    def init(self, params):
-        self.indbmode = True
-        self.outdbmode = True
-        self.name = 'MultiRunner'
-        self.param_names = [
+    """
+    Run another sieve multiple times on the same input with different sets of parameters.
+    Useful for evaluating results of different combinations of parameters.
+    """
+    def __init__(self, params, logfile):
+        """
+        Mandatory parameters:
+            * sieve (module): Sieve to run
+            * params (dict): Parameter set listing the different values for each parameter on the following form::
+
+                {
+                    'param1': [1, 2],
+                    'param2': ['A', 'B', 'C']
+                }
+
+            The supplied sieve will run once for each possible combination of parameters. The preceding example will thus run 2*3=6 times.
+        """
+        param_names = [
             'sieve',
             'params'
         ]
+        Sieve.__init__(self, params, logfile, name='MultiRunner', param_names=param_names)
 
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         (outdir, outfile) = outfilepath.rsplit('/', 1)

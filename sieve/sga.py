@@ -9,7 +9,7 @@ from util import sequence_to_fasta
 from sieve import Sieve
 from util import PathError
 
-class SGAAligner(Sieve):
+class StringGraphAssembler(Sieve):
     """
     Run the String Graph Assembler pipeline (preprocess, correct, filter, fm-merge, rmdup, overlap, assemble).
     Output the assembled contigs.
@@ -86,4 +86,4 @@ class SGAAligner(Sieve):
             finally:
                 outfile.close()
 
-sieve = SGAAligner
+sieve = StringGraphAssembler
