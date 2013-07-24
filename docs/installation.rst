@@ -3,7 +3,7 @@ Installation
 SofT does not require installation - all that is required is the installation of its dependencies and that a Python pipeline is constructed. Sample pipelines for identification of QNR and beta-lactamase genes are included in the samples directory.
 
 Dependencies
-============
+------------
 * Python 2.6
 * HMMER__ >= v3.0
 * `String Graph Assembler`__ >= v0.10.6

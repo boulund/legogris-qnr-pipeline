@@ -4,3 +4,4 @@ Modules
     sieve
     util
     parsing
+    db

@@ -23,7 +23,7 @@ class Sieve(object):
                 * String, meaning the parameter is mandatory.
                 * A tuple of a string and default value, would the value not be supplied in the params argument.
 
-        Raises: KeyError
+        :raises KeyError: If parameter in `param_names` without default value is missing from `params`.
         """
 
         self.param_names = param_names
@@ -32,7 +32,7 @@ class Sieve(object):
         for param in self.param_names:
             if isinstance(param, str):
                 if not param in params:
-                    raise Exception('Missing mandatory parameter %s for sieve %s' % (param, self.name))
+                    raise KeyError('Missing mandatory parameter %s for sieve %s' % (param, self.name))
             else:
                 setattr(self, param[0], param[1]) #Set default value
         for (param_name, value) in params.items():

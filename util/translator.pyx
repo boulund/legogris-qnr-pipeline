@@ -537,7 +537,7 @@ cpdef bytes frame_sequence(char *sequence, int frame):
                     j += 1
             dseq[j] = 0
         else:
-            #Performance gain no biggie here
+            #This here microoptimization did not make no big difference after all.
             j = 0
             for i in range(frame, l):
                 c = sequence[i]

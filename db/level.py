@@ -1,10 +1,34 @@
 import leveldb
 
 def open(path, truncate=False, sync=False):
+    """
+    Open a new connection to a pair of DNA and protein databases using the Google leveldb engine.
+
+    Args:
+        * path (str): Base path and prefix for database directories.
+
+    Kwargs:
+        * truncate (bool, False): If databases should be truncated before opening.
+        * sync (bool, False): If writes to the databases should be performed synchronously.
+
+    Returns:
+        dbs (tuple): Two LDB instances.
+    """
     return (LDB(path+'.dna', truncate, sync), LDB(path+'.prot', truncate, sync))
 
 class LDB:
-    def __init__(self, path, truncate=False, sync=True):
+    def __init__(self, path, truncate=False, sync=False):
+        """
+        Open a new connection to a database using the Google leveldb engine.
+
+        Args:
+            * path (str): Path to database.
+
+        Kwargs:
+            * truncate (bool, False): If database should be truncated before opening.
+            * sync (bool, False): If writes to the database should be performed synchronously.
+        """
+
         self.batchsize = 1000
         self.batchcount = 0
         self.sync = sync
@@ -12,9 +36,16 @@ class LDB:
         self.db = leveldb.LevelDB(path, write_buffer_size=1024*(2 << 19))
 
     def get(self, key):
+        """
+        Retrieve the item with the given `key`.
+        """
         return self.db.Get(key)
 
     def put(self, key, val):
+        """
+        Put `val` at `key`.
+        Note that disk writing is done in batches, so be sure to call `close` or `flush` to make sure that values are put into the store.
+        """
         self.batch.Put(key, val)
         self.batchcount += 1
         if self.batchcount >= self.batchsize:
@@ -24,14 +55,23 @@ class LDB:
         return self.db.RangeIter()
 
     def flush(self):
+        """
+        Write `put` calls to database.
+        """
         self.db.Write(self.batch, sync=self.sync)
         self.batch = leveldb.WriteBatch()
 
     def close(self):
+        """
+        Flush the database and delete the connection to it.
+        """
         self.flush()
         del self.db
 
     def truncate(self):
+        """
+        Delete all values in the database. This is done using iteration, which is obviously not very effective, so should be done sparingly.
+        """
         for x in self.db.RangeIter(include_value=False):
             self.db.Delete(x)
 
