@@ -7,16 +7,13 @@ import uuid
 from sieve import Sieve
 from util import PathError
 
-def create(params, logfile):
-    return BLASTClusterer(params, logfile)
-
 class BLASTClusterer(Sieve):
-    def init(self, params):
-        self.indbflags = None
-        self.indbmode = True
-        self.outdbmode = True
-        self.name = 'BLASTClust'
-        self.param_names = [
+    """
+    Run BLASTClust to arrange input sequences into clusters.
+    """
+
+    def __init__(self, params, logfile):
+        param_names = [
             'blastclust_out',
             ('clusters_out_path', ''),
             ('clusters_with_scores_out_path', ''),
@@ -25,9 +22,9 @@ class BLASTClusterer(Sieve):
             ('coverage_threshold', 0.25), # Coverage threshold for blastclust, range 0.1-0.99
             ('reference_sequence_path', '') #Reference sequences to add to infile before clustering
         ]
+        Sieve.__init__(self, params, logfile, name='BLASTClust', param_names=param_names)
 
 
-    #def run(self, filepath, numcores, percent_identity, cov_threshold):
     #TODO: Ensure blastclust gets maximum 64 lines of FASTA (64*80 columns)
     def run(self, indnadb, inprotdb, infilepath, outdnadb, outprotdb, outfilepath):
         logfile = self.logfile
@@ -100,30 +97,25 @@ class BLASTClusterer(Sieve):
         logfile.flush()
         return clusters
 
-##-----------------------------------------------##
-##                 RUN BLASTCLUST                ##
-##-----------------------------------------------##
+
     def run_blastclust(self, infilepath):
-        '''
+        """
         Run formatdb to create a BLAST database, then run
         blastclust on that database to cluster all hits.
 
-        Input::
+        Args:
 
-            infilepath  filename with sequences with unique ids to cluster.
+            * infilepath (str):  filename with sequences with unique ids to cluster.
 
         Returns::
 
             (None)      Writes output to a file, 'filename.clusters' that contains
                         all identified clusters on each row.
 
-        Errors::
+        :raises PathError: If there is anything wrong with the paths to output or input files.
+        :raises ValueError:  If there is anything wrong with the input.
 
-            PathError   raied if there is something wrong with the paths to output
-                        or input files.
-            ValueError  raised if there is something wrong
-
-        '''
+        """
 
         from os import path
         import shlex, subprocess
@@ -157,13 +149,9 @@ class BLASTClusterer(Sieve):
 
 
         return (return_text, blastclust_output, outfilepath)
-############## END run_blastclust
 
-##-----------------------------------------------##
-##          PARSE OUTPUT FROM BLASTCLUST         ##
-##-----------------------------------------------##
     def parse_blastclust(self, filename):
-        '''
+        """
         Parses blastclust output into a nested list structure
 
         Input::
@@ -180,7 +168,7 @@ class BLASTClusterer(Sieve):
             PathError   raised if the file does not exists
             ValueError  rasied if no unique identifiers could be found and removed
 
-        '''
+        """
 
         from os import path
         logfile = self.logfile
