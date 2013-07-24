@@ -28,6 +28,12 @@ sga
     :members:
     :undoc-members:
 
+blastclust
+----------
+.. automodule:: sieve.blastclust
+    :members:
+    :undoc-members:
+
 multirunner
 -----------
 .. automodule:: sieve.multirunner

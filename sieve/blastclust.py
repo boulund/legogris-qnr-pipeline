@@ -13,12 +13,21 @@ class BLASTClusterer(Sieve):
     """
 
     def __init__(self, params, logfile):
+        """
+        Optional parameters:
+            * clusters_out_path (str, ''): Path to file where cluster summary should be written. Default, '', means to not write at all.
+            * clusters_with_scores_out_path (str, ''): Path to file where cluster summary together with scores should be written. Default, '', means to not write at all.
+            * reference_sequence_path (str, ''): Reference sequences to add to infile before clustering. '' mean to skip this step.
+            * numcpu (int, 0): Number of CPUs to use. 0 means all available CPUs.
+            * percent_identity (int, 90): Percent identity threshold, range 3-100.
+            * coverage_threshold (float, 0.25): Coverage threshold for blastclust, range 0.1-0.99
+
+        """
         param_names = [
-            'blastclust_out',
             ('clusters_out_path', ''),
             ('clusters_with_scores_out_path', ''),
-            ('numcpu', 0), #Number of CPUs to use, 0 means all
-            ('percent_identity', 90), # Percent identity threshold, range 3-100, default is 90 %
+            ('numcpu', 0),
+            ('percent_identity', 90), #
             ('coverage_threshold', 0.25), # Coverage threshold for blastclust, range 0.1-0.99
             ('reference_sequence_path', '') #Reference sequences to add to infile before clustering
         ]
@@ -104,13 +113,10 @@ class BLASTClusterer(Sieve):
         blastclust on that database to cluster all hits.
 
         Args:
-
             * infilepath (str):  filename with sequences with unique ids to cluster.
 
-        Returns::
 
-            (None)      Writes output to a file, 'filename.clusters' that contains
-                        all identified clusters on each row.
+        Writes output to a file, '`infilepath`.clusters' that contains all identified clusters on each row.
 
         :raises PathError: If there is anything wrong with the paths to output or input files.
         :raises ValueError:  If there is anything wrong with the input.
@@ -154,19 +160,14 @@ class BLASTClusterer(Sieve):
         """
         Parses blastclust output into a nested list structure
 
-        Input::
+        Args:
+            * filename (str): Filename of blastclust output
 
-            filename    filename of blastclust output
+        Returns:
+            sequenceIDs: list of sequence IDs with unique identifiers right after the '>' symbol
 
-        Returns::
-
-            sequenceIDs list of sequence IDs with unique identifiers right after
-                        the '>' symbol
-
-        Errors::
-
-            PathError   raised if the file does not exists
-            ValueError  rasied if no unique identifiers could be found and removed
+        :raises PathError: If the file does not exists.
+        :raises ValueError:  If no unique identifiers could be found and removed.
 
         """
 
@@ -195,43 +196,35 @@ class BLASTClusterer(Sieve):
             raise ValueError
 
         return sequenceIDs
-############## END parse_blastclust
-
-##-----------------------------------------------##
-##              LIMIT SEQUENCE LENGTH            ##
-##-----------------------------------------------##
-def _limit_sequence_length(sequencefile,MAX_LINES=64):
-    '''
-    Takes a sequence file and shortens all sequences
-    it to the MAX_LINES supplied.
+def _limit_sequence_length(sequencefile,max_lines=64):
+    """
+    Take a sequence file and shorten all sequences
+    it to the max_lines supplied.
 
     It is divided by
     inserting the sequence ID header ">seqid...."
     after the maximum sequence length position, thus
     creating several smaller sequence segments with
     the same sequence ID and header line.
-    Recommended MAX_LINES is 64 (64 lines of 80
+    Recommended max_lines is 64 (64 lines of 80
     amino acid residues = 5120).
     As the function splits at "\n" characters it
     requires the fasta file to keep sequences on
     several lines - fasta files with sequences on
     a single line will NOT work.
 
-    Input::
+    Args:
+        * sequencefile (str): Filename
 
-        sequencefile    filename string.
-        MAX_LINES       maximum number of lines for one sequence, defaults
-                        to 64.
+    Kwargs:
+        * max_lines (int, 64): Maximum number of lines for one sequence.
 
-    Returns::
+    Returns:
+        filename (str)   Writes directly to disk to 'sequencefile.shortened'. filename is the filename of the output file.
 
-        filename (String)   Writes directly to disk to 'sequencefile.shortened'. filename is the filename of the output file.
+        :raises PathError: If there is something wrong with the `sequencefile` path.
 
-    Errors::
-
-        PathError   raised if there is something wrong with path
-
-    '''
+    """
 
     from os import path
 
@@ -271,10 +264,10 @@ def _limit_sequence_length(sequencefile,MAX_LINES=64):
                 counter = 0 # Reset, starting with new sequence
 
             for line in lines:
-                # Add lines of sequence until MAX_LINES,
+                # Add lines of sequence until max_lines,
                 # then add sequence identifier again and
                 # continue until end of sequence
-                if counter > MAX_LINES:
+                if counter > max_lines:
                     if first:
                         if not(lines[0].endswith("\n")):
                             seqout.append(''.join([lines[0],"\n"]))
@@ -303,5 +296,3 @@ def _limit_sequence_length(sequencefile,MAX_LINES=64):
             outfile.write(''.join(seqout))
 
     return outfilename
-############## END limit_sequence_length
-
