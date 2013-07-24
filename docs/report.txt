@@ -1,0 +1,19 @@
+Report
+------
+
+Selecting values for String Graph Assembler
+-------------------------------------------
+SGA (String Graph Assembler) is a complex pipeline in itself, with several parameters to tweak that will heavily influence the result of an assembly. It is thus important to pick the variables carefully in order to get sane results. In order to select the default values for the SGA sieve, an evaluation set was created by taking sven known qnr genes and randomly slicing and mutating them, creating a file with 100 basepairs long sequences. The script that was used to do this is included in scripts/fb_fragments_from_fasta.py, with a random mutation rate of 1%.
+
+The evaluated parameters and their values tested:
+* error_rate: [0.01, 0.02, 0.03],
+* min_assembly_overlap: [0, 5, 10, 15, 20, 25, 30],
+* min_merge_overlap: [5, 10, 15, 20, 25, 30],
+* resolve_small: [0, 5, 10, 500]
+
+Running the multirunner sieve with these paramaters initiated an SGA sieve run with each of all the possible combinations of these values. Output sets were then sorted based on contig count, average contig length and length of longest contig. They were then manually evaluated. Balanced results seemed to be acieved with the following values:
+* error_rate: 0.02
+* min_assembly_overlap: 20
+* min_merge_overlap: 20
+* resolve_small: 5
+This gave 54 contigs with an average length of 84 and a longest contig length of 592. This seems to suggest that further scaffolding or alignment might be needed to get really meaningful results. Since the scaffolding part of SGA requires paired-end or mate pair reads and the framework is designed for a use case with more general data in mind, this option has been discarded for the moment. If this functionality is desired, the SGA sieve can easily be modified accordingly.
