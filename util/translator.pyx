@@ -587,6 +587,7 @@ cpdef translate_sequence(char *id, char *name, char *desc, char *sequence):
     #Local variables = less overhead
     try:
         result = []
+        seqprefix = ''.join(['{"name": "', name,'", "description": "', desc])
         for frame in range(0,6):
             #First 3 frames are normal, following 3 are reverse complements
             if frame > 2:
@@ -618,15 +619,18 @@ cpdef translate_sequence(char *id, char *name, char *desc, char *sequence):
                 j += 1
             pseq[j] = 0
             protein = pseq
-            seq = {
-                'protein': protein,
-                'name': name,
-                'description': desc,
-                'frame': frame
-            }
+            #seq = {
+            #    'protein': protein,
+            #    'name': name,
+            #    'description': desc,
+            #    'frame': frame
+            #}
             out = ''.join(['>', id, '_', str(frame), '\n', protein, '\n'])
+
+            seq = ''.join([seqprefix, '", "frame": ', str(frame),', "protein": "', protein,'"}'])
             try:
-                result.append((frame, json.dumps(seq), out))
+                #result.append((frame, json.dumps(seq), out))
+                result.append((frame, seq, out))
             except:
                 print("* dna: ", dna)
                 print(seq)

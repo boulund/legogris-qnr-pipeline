@@ -17,3 +17,16 @@ Running the multirunner sieve with these paramaters initiated an SGA sieve run w
 * min_merge_overlap: 20
 * resolve_small: 5
 This gave 54 contigs with an average length of 84 and a longest contig length of 592. This seems to suggest that further scaffolding or alignment might be needed to get really meaningful results. Since the scaffolding part of SGA requires paired-end or mate pair reads and the framework is designed for a use case with more general data in mind, this option has been discarded for the moment. If this functionality is desired, the SGA sieve can easily be modified accordingly.
+
+
+Performance
+-----------
+Execution time logs for gzip format:
+Input: 100 bp Immunina reads
+37,168,092 fragments, gzipped  = 3,716,809,200 bases ~= 3.7 GB (resulting pfa file: 9.7 GB)
+(with json) Step 1: Translate DNA to protein and insert both into leveldb database: 3:51:40
+(with strings) Step 1: Translate DNA to protein and insert both into leveldb database: 1:20:39
+Step 2: hmmsearch: 0:02:14 (1076 sequences passed)
+Step 3: SGA: 0:00:6
+
+~ 2.5 GB / h = 0.4 h / GB = 400 h / TB ~= 17 dagar / TB = 167 dagar / 10 TB...
