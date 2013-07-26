@@ -29,15 +29,18 @@ class HMMERParser:
         self.logfile.write("Parsing "+infilepath+"\n")
         try:
             for pseq in _parse_hmmsearch_output(infilepath):
-                seq = json.loads(indb.get(pseq['id']))
-                seq['score'] = pseq['score']
-                seq['dscore'] = pseq['dscore']
-                seq['dstart'] = pseq['dstart']
-                seq['dfinish'] = pseq['dfinish']
-                indb.put(pseq['id'], json.dumps(seq))
-                seq['id'] = pseq['id']
-                yield seq
-
+                try:
+                    rawseq = indb.get(pseq['id'])
+                    seq = json.loads(rawseq)
+                    seq['score'] = pseq['score']
+                    seq['dscore'] = pseq['dscore']
+                    seq['dstart'] = pseq['dstart']
+                    seq['dfinish'] = pseq['dfinish']
+                    indb.put(pseq['id'], json.dumps(seq))
+                    seq['id'] = pseq['id']
+                    yield seq
+                except ValueError as e:
+                    self.logfile.write("Could not JSON parse: "+rawseq+"\n")
         except IOError:
             self.logfile.write("Could not open file for reading: "+infilepath+"\n")
             self.logfile.write("Continuing with next file...\n")
@@ -127,6 +130,4 @@ def _parse_hmmsearch_output(filename):
     finally:
         file.close()
 
-    if seqs == {}:
-        raise ValueError
     return seqs.values()

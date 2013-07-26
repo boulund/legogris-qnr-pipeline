@@ -2,13 +2,13 @@
 import os
 import sys
 import time
-sys.path.insert(0, os.path.abspath('../../..'))
+sys.path.insert(1, os.path.abspath(sys.path[0] + '../../..'))
 from util.logger import Logger
 from sieve import run_sieves, dnareader, hmmsearch, blastclust, sga, multirunner
 from db import level
 
 
-_PROFILE = True
+_PROFILE = False
 
 bp = '/lagring/boulund/johan_bengtsson/indien-scilife2011/'
 #paths = [
@@ -20,7 +20,8 @@ bp = '/lagring/boulund/johan_bengtsson/indien-scilife2011/'
 #    ('R6', [bp+'8_111221_AC03V3ACXX_JL32_index9_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL32_index9_2.fastq.gz'])
 #]
 paths = [
-    #('SKU', [bp+'8_111221_AC03V3ACXX_JL34_index11_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL34_index11_2.fastq.gz']),
+    #('ntsmall', ['/lagring/edstromr/genomes/ntsmall_plus_qnr.nfa']),
+    ('SKU', [bp+'8_111221_AC03V3ACXX_JL34_index11_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL34_index11_2.fastq.gz']),
     ('SKN', [bp+'8_111221_AC03V3ACXX_JL35_index12_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL35_index12_2.fastq.gz'])
 ]
 #paths = [('ntsmall', ['tutorial/database/ntsmallest1_plus_qnr.nfa', 'tutorial/database/ntsmallest2_plus_qnr.nfa'])]
@@ -49,11 +50,11 @@ def run(dir, inpath):
                     (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classA.hmm', 'hmmsearch_out': dir+'/hmmsearch_out', 'write_only_domain': True}),
                     (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classC.hmm', 'hmmsearch_out': dir+'/hmmsearch_out', 'write_only_domain': True}),
                     (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classD.hmm', 'hmmsearch_out': dir+'/hmmsearch_out', 'write_only_domain': True})
-                ]
-                (sga, {'error_rate': 0.01, 'min_assembly_overlap': 30, 'min_merge_overlap': 25, 'resolve_small': 10 })
+                ],
+                (sga, {'error_rate': 0.01, 'min_assembly_overlap': 30, 'min_merge_overlap': 25, 'resolve_small': 10, 'parse_output': False  })
             ],
-            ['', dir+'/fragments.db', dir+'/fragments_passed.db', dir+'/clusters.db'],   #dbs
-            [inpath, dir+'/dnareader.pfa', dir+'/fragments_passed.nfa', dir+'/clusters.nfa'],   #files
+            ['', dir+'/fragments.db', dir+'/fragments_passed.db', dir+'/fragments_passed_second.db',dir+'/clusters.db'],   #dbs
+            [inpath, dir+'/dnareader.pfa', dir+'/fragments_passed.nfa', dir+'/fragments_passed_second.nfa',dir+'/clusters.nfa'],   #files
             logfile,
             level,
             0,3
