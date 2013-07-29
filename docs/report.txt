@@ -30,3 +30,14 @@ Step 2: hmmsearch: 0:02:14 (1076 sequences passed)
 Step 3: SGA: 0:00:6
 
 ~ 2.5 GB / h = 0.4 h / GB = 400 h / TB ~= 17 dagar / TB = 167 dagar / 10 TB...
+
+
+
+Design choices
+--------------
+Translator:
+Since input data is in nucleotide format and anlasys is done for amino acids, the input sequences need to be translated before analysis. Boulund's original QNR pipeline used transeq for this purpose. Transeq is stable and has very good performance. However, the output from transeq does not contain any reference to the input sequence. Since the original DNA sequence is used for analysis in later stages and the startup overhead involved in running transeq sequence by sequence was too large to be fast enough, an alternative had to be found. Biopython was evaluated but proved to be too slow. A custom implementation in Python worked better, but even after aggressive optimizations it was still more than ten times slower than transeq and took a considerable fraction of the total running time of the pipeline. The code was ported to Cython, a statically typed superset of Python that compiles to C code with Python bindings. Adding type declarations alone gave significant improvements, and after all the heavy parts of the process had been optimized, it was fast enough so that database and file I/O and serialization were the only significant bottlenecks.
+
+Serialization:
+Sequences and their metadata are stored in dictionaries. In Python, JSON is the fastest serialization option, and the most concise text-based one, which made the choice natural. Unfortunately, there is significant overhead involving type-lookups that slows down the process. Therefore, a string-concatenation-based approach is used for serialization while the bundled json solution is still used for deserialization. Given the low percentage of sequences that make it through in the QNR and beta-lactamase use cases, serialization is performed to a much higher extend than deserialization so the somewhat suboptimal deserialization is still acceptable.
+
