@@ -41,3 +41,18 @@ Since input data is in nucleotide format and anlasys is done for amino acids, th
 Serialization:
 Sequences and their metadata are stored in dictionaries. In Python, JSON is the fastest serialization option, and the most concise text-based one, which made the choice natural. Unfortunately, there is significant overhead involving type-lookups that slows down the process. Therefore, a string-concatenation-based approach is used for serialization while the bundled json solution is still used for deserialization. Given the low percentage of sequences that make it through in the QNR and beta-lactamase use cases, serialization is performed to a much higher extend than deserialization so the somewhat suboptimal deserialization is still acceptable.
 
+Persistance:
+Goals for the intermediate storage of sequences:
+* Ability to retrieve nucleotide sequences and protein translations from associated ID
+* Random access
+* Linear time- and space complexity
+* Minimal overhead
+* Fast performance with huge number of sequential writes
+* Implementation should ideally be able to use a key-value dictionary style interface in Python
+
+The goals suggest using a dbm derivative database engine without the overhead of relations and other features of traditional databases.
+Berkeley DB seemed promising initially, but performed badly even after tweaking. The use of fixed-length records could improve performance significantly and shoukd work fine for Illumina reads, but one of the overall goals of the project was to have more general solutions for data from arbitrary sources. For future implementations, it might be interesting to try out the Berkeley DB Recno backend with fixed-length records.
+Two working implementations are included: Kyoto Cabinet (successor of Tokyo Cabinet) and leveldb from Google.
+Both use the same interface and can thus be used interchangeably. In the current state of implementation, leveldb performed marginally better while having some built-in compression, which makes it a natural default database engine. A draw-back is that since it is not very tweakable without rebuilding it from source, optimizing it involves a considerable level of manual work.
+
+
