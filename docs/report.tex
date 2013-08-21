@@ -1,0 +1,69 @@
+\documentclass[a4paper,12pt]{article}
+\title {Report on project in MVE405}
+\date {Aug 21, 2013}
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+This repsort is a documentation on the outcome of a project in the Chalmers course MVE405 - Individual project in mathematics and mathematical statistics.
+
+\section{Background}
+The starting-point of this project is the QNR gene identification and Python pipeline developed by Fredrik Boulund in 2011. It worked well for 
+
+\section{Result}
+\subsection{Selecting values for String Graph Assembler}
+SGA (String Graph Assembler) is a complex pipeline in itself, with several parameters to tweak that will heavily influence the result of an assembly. It is thus important to pick the variables carefully in order to get sane results. In order to select the default values for the SGA sieve, an evaluation set was created by taking sven known qnr genes and randomly slicing and mutating them, creating a file with 100 basepairs long sequences. The script that was used to do this is included in scripts/fb\_fragments\_from\_fasta.py, with a random mutation rate of 1\%.
+
+The evaluated parameters and their values tested:
+\begin{itemize}
+\item
+error\_rate: [0.01, 0.02, 0.03],
+\item
+min\_assembly\_overlap: [0, 5, 10, 15, 20, 25, 30],
+\item
+min\_merge\_overlap: [5, 10, 15, 20, 25, 30],
+\item
+resolve\_small: [0, 5, 10, 500]
+\end{itemize}
+
+Running the multirunner sieve with these paramaters initiated an SGA sieve run with each of all the possible combinations of these values. Output sets were then sorted based on contig count, average contig length and length of longest contig. They were then manually evaluated. Balanced results seemed to be acieved with the following values:
+\begin{itemize}
+\item
+error\_rate: 0.02
+\item
+min\_assembly\_overlap: 20
+\item
+min\_merge\_overlap: 20
+\item
+resolve\_small: 5
+\end{itemize}
+This gave 54 contigs with an average length of 84 and a longest contig length of 592. This seems to suggest that further scaffolding or alignment might be needed to get really meaningful results. Since the scaffolding part of SGA requires paired-end or mate pair reads and the framework is designed for a use case with more general data in mind, this option has been discarded for the moment. If this functionality is desired, the SGA sieve can easily be modified accordingly.
+
+\subsection{Performance}
+Execution time logs for gzip format:
+
+Input: 100 bp Immunina reads
+
+37,168,092 fragments, gzipped = 3,716,809,200 bases $\sim$= 3.7 GB (resulting pfa file: 9.7 GB)
+
+\begin{tabular}{lll}
+% (with json) Step 1: Translate DNA to protein and insert both into leveldb database: 3:51:40
+Step 1&Translate DNA, insert into database&1:20:39\\
+Step 2&hmmsearch (1076 sequences passed)&0:02:14\\
+Step 3&SGA&0:00:6
+\end{tabular}
+
+
+$\sim$2.5 GB / h = 0.4 h / GB = 400 h / TB $\sim$= 17 days / TB = 167 days / 10 TB.
+
+
+ 
+\subsection{Design choices}
+\subsubsection{Translator}
+Since input data is in nucleotide format and anlasys is done for amino acids, the input sequences need to be translated before analysis. Boulund's original QNR pipeline used transeq for this purpose. Transeq is stable and has very good performance. However, the output from transeq does not contain any reference to the input sequence. Since the original DNA sequence is used for analysis in later stages and the startup overhead involved in running transeq sequence by sequence was too large to be fast enough, an alternative had to be found. Biopython was evaluated but proved to be too slow. A custom implementation in Python worked better, but even after aggressive optimizations it was still more than ten times slower than transeq and took a considerable fraction of the total running time of the pipeline. The code was ported to Cython, a statically typed superset of Python that compiles to C code with Python bindings. Adding type declarations alone gave significant improvements, and after all the heavy parts of the process had been optimized, it was fast enough so that database and file I/O and serialization were the only significant bottlenecks.
+
+\subsubsection{Serialization}
+Sequences and their metadata are stored in dictionaries. In Python, JSON is the fastest serialization option, and the most concise text-based one, which made the choice natural. Unfortunately, there is significant overhead involving type-lookups that slows down the process. Therefore, a string-concatenation-based approach is used for serialization while the bundled json solution is still used for deserialization. Given the low percentage of sequences that make it through in the QNR and beta-lactamase use cases, serialization is performed to a much higher extend than deserialization so the somewhat suboptimal deserialization is still acceptable.
+
+\end{document}
