@@ -14,7 +14,7 @@
 \usepackage[style=authoryear-ibid,backend=biber]{biblatex}
 \addbibresource{refs.bib}
 
-\title {Report on project in MVE405}
+\title {Report on project in MVE405!}
 \date {Aug 21, 2013}
 
 \begin{document}
@@ -103,11 +103,16 @@ resolve\_small: 5
 This gave 54 contigs with an average length of 84 and a longest contig length of 592. This seems to suggest that further scaffolding or alignment might be needed to get really meaningful results. Since the scaffolding part of SGA requires paired-end or mate pair reads and the framework is designed for a use case with more general data in mind, this option has been discarded for the moment. If this functionality is desired, the SGA sieve can easily be modified accordingly as long as the pairing information is saved in the reference databases.
 
 \subsection{Performance}
-Execution time logs for gzip format:
+The pipeline has been benchmarked on a shared RedHat Linux environment with 16 GB RAM, 4 core 64 bit Intel Xeon X3470 CPU at 2.93 GHz. The operations were performed on an ext4 file system on a RAID spread across 7200 rpm SAS 600 disks with 16MB cache.
 
+Profiling was performed using Python's supplied cProfile module, which generally adds an acceptable overhead REFERENCE. 
+
+Execution time logs for gzip format:
 Input: 100 bp Immunina reads
 
 37,168,092 fragments, gzipped = 3,716,809,200 bases $\sim$= 3.7 GB (resulting pfa file: 9.7 GB)
+
+The ext4 file system adds a significant overhead for database writes, so use of another filesystem such as ext3 should significantly improve performance. If large enough SSD disks can be afforded, this could also be considered.
 
 \begin{tabular}{lll}
 % (with json) Step 1: Translate DNA to protein and insert both into leveldb database: 3:51:40
@@ -127,6 +132,12 @@ Since input data is in nucleotide format and anlasys is done for amino acids, th
 
 \subsubsection{Serialization}
 Sequences and their metadata are stored in dictionaries. In Python, JSON is the fastest serialization option, and the most concise text-based one, which made the choice natural. Unfortunately, there is significant overhead involving type-lookups that slows down the process. Therefore, a string-concatenation-based approach is used for serialization while the bundled json solution is still used for deserialization. Given the low percentage of sequences that make it through in the QNR and beta-lactamase use cases, serialization is performed to a much higher extend than deserialization so the somewhat suboptimal deserialization is still acceptable.
+
+\section{Conclusion}
+xxx
+
+\section{Acknowledgements}
+I want to thank Erik Kristiansson and Fredrik Boulund at the Mathematical Sciences department at Chalmers for giving me the opportunity to do this project and guiding me along the way. I would also like to thank Mariana Pereira for help with the betalactamase data, and the people at the department for good times.
 
 \printbibliography
 \end{document}
