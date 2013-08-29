@@ -1,9 +1,13 @@
 Report
 ------
+Background
+----------
+
+
 
 Selecting values for String Graph Assembler
 -------------------------------------------
-SGA (String Graph Assembler) is a complex pipeline in itself, with several parameters to tweak that will heavily influence the result of an assembly. It is thus important to pick the variables carefully in order to get sane results. In order to select the default values for the SGA sieve, an evaluation set was created by taking sven known qnr genes and randomly slicing and mutating them, creating a file with 100 basepairs long sequences. The script that was used to do this is included in scripts/fb_fragments_from_fasta.py, with a random mutation rate of 1%.
+SGA (String Graph Assembler) is a complex pipeline in itself, with several parameters to tweak that will heavily influence the result of an assembly. It is thus important to pick the variables carefully in order to get sane results. In order to select the default values for the SGA sieve, an evaluation set was created by taking seven known qnr genes. The genes were randomly sliced and mutated, creating a file with 100 basepairs long sequences. The script that was used to do this is included in scripts/fb_fragments_from_fasta.py, with a random mutation rate of 1%.
 
 The evaluated parameters and their values tested:
 * error_rate: [0.01, 0.02, 0.03],
@@ -16,7 +20,7 @@ Running the multirunner sieve with these paramaters initiated an SGA sieve run w
 * min_assembly_overlap: 20
 * min_merge_overlap: 20
 * resolve_small: 5
-This gave 54 contigs with an average length of 84 and a longest contig length of 592. This seems to suggest that further scaffolding or alignment might be needed to get really meaningful results. Since the scaffolding part of SGA requires paired-end or mate pair reads and the framework is designed for a use case with more general data in mind, this option has been discarded for the moment. If this functionality is desired, the SGA sieve can easily be modified accordingly.
+This gave 54 contigs with an average length of 84 and a longest contig length of 592. This suggests that further scaffolding or alignment might be needed to get really meaningful results. Since the scaffolding part of SGA requires paired-end or mate pair reads and the goal of the framework is a design with more general data in mind, this option has been discarded for the moment. If this functionality is desired, the SGA sieve can easily be modified accordingly. Earlier stages in the sieve would naturally also have to be adapted to keep the pairings.
 
 
 Performance
@@ -31,15 +35,17 @@ Step 3: SGA: 0:00:6
 
 ~ 2.5 GB / h = 0.4 h / GB = 400 h / TB ~= 17 dagar / TB = 167 dagar / 10 TB...
 
+The majority of the running time is spent writing contigs into the database. Profiling the application revealed that there is a 17% speed-up potential by rewriting the database wrapper in Cython, due to the huge number of function calls to the database methods.
+
 
 
 Design choices
 --------------
 Translator:
-Since input data is in nucleotide format and anlasys is done for amino acids, the input sequences need to be translated before analysis. Boulund's original QNR pipeline used transeq for this purpose. Transeq is stable and has very good performance. However, the output from transeq does not contain any reference to the input sequence. Since the original DNA sequence is used for analysis in later stages and the startup overhead involved in running transeq sequence by sequence was too large to be fast enough, an alternative had to be found. Biopython was evaluated but proved to be too slow. A custom implementation in Python worked better, but even after aggressive optimizations it was still more than ten times slower than transeq and took a considerable fraction of the total running time of the pipeline. The code was ported to Cython, a statically typed superset of Python that compiles to C code with Python bindings. Adding type declarations alone gave significant improvements, and after all the heavy parts of the process had been optimized, it was fast enough so that database and file I/O and serialization were the only significant bottlenecks.
+Since input data is in nucleotide format and analysis is done for amino acids, the input sequences need to be translated before analysis. Boulund's original QNR pipeline used transeq for this purpose. Transeq is stable and has very good performance. However, the output from transeq does not contain any reference to the input sequence. Since the original DNA sequence is used for analysis in later stages and the startup time overhead involved in running transeq sequence by sequence was too large to be feasible, an alternative had to be found. Biopython was evaluated but turned out to be too slow. A custom implementation in Python worked better, but even after aggressive optimizations it was still more than ten times slower than transeq and took a considerable fraction of the total running time of the pipeline. The code was ported to Cython, a statically typed superset of Python that compiles to C code with Python bindings. Adding type declarations alone gave significant improvements, and after all the heavy parts of the process had been micro-optimized, it was fast enough so that database and file I/O and serialization were the only significant bottlenecks.
 
 Serialization:
-Sequences and their metadata are stored in dictionaries. In Python, JSON is the fastest serialization option, and the most concise text-based one, which made the choice natural. Unfortunately, there is significant overhead involving type-lookups that slows down the process. Therefore, a string-concatenation-based approach is used for serialization while the bundled json solution is still used for deserialization. Given the low percentage of sequences that make it through in the QNR and beta-lactamase use cases, serialization is performed to a much higher extend than deserialization so the somewhat suboptimal deserialization is still acceptable.
+Sequences and their metadata are stored in dictionaries. In Python, JSON is the fastest serialization option, and the most concise text-based one, which made the choice natural. Unfortunately, there is significant overhead involving type-lookups that slows down the process. Therefore, a string-concatenation-based approach is used for serialization while the bundled json solution is still used for deserialization. Given the low percentage of sequences that make it through in the QNR and beta-lactamase use cases, serialization is performed to a much higher extend than deserialization so the somewhat suboptimal deserialization is still acceptable. If the pipeline is to be used on huge datasets where a large number of sequences pass the first sieves, the deserialization has some room for optimization.
 
 Persistance:
 Goals for the intermediate storage of sequences:
@@ -51,8 +57,8 @@ Goals for the intermediate storage of sequences:
 * Implementation should ideally be able to use a key-value dictionary style interface in Python
 
 The goals suggest using a dbm derivative database engine without the overhead of relations and other features of traditional databases.
-Berkeley DB seemed promising initially, but performed badly even after tweaking. The use of fixed-length records could improve performance significantly and shoukd work fine for Illumina reads, but one of the overall goals of the project was to have more general solutions for data from arbitrary sources. For future implementations, it might be interesting to try out the Berkeley DB Recno backend with fixed-length records.
+Berkeley DB from Oracle seemed promising initially, but performed badly even after tweaking. The use of fixed-length records could improve performance significantly and should work fine for Illumina reads, but one of the overall goals of the project was to have more general solutions for data from arbitrary sources. For future, more specific, implementations, it might be worth investigating Berkeley DB Recno backend with fixed-length records.
 Two working implementations are included: Kyoto Cabinet (successor of Tokyo Cabinet) and leveldb from Google.
-Both use the same interface and can thus be used interchangeably. In the current state of implementation, leveldb performed marginally better while having some built-in compression, which makes it a natural default database engine. A draw-back is that since it is not very tweakable without rebuilding it from source, optimizing it involves a considerable level of manual work.
+Both use the same interface and can thus be used interchangeably. In the current state of implementation, leveldb performed marginally better while having some built-in compression, which justifies choosing it as the default database engine. A drawback is that since it is not very tweakable without rebuilding from source, further optimization involves a considerable level of manual work.
 
 

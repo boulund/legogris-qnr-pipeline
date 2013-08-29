@@ -8,7 +8,7 @@ from sieve import run_sieves, dnareader, hmmsearch, blastclust, sga, multirunner
 from db import level
 
 
-_PROFILE = True
+_PROFILE = False
 
 bp = '/lagring/boulund/johan_bengtsson/indien-scilife2011/'
 """
@@ -29,17 +29,17 @@ paths = [
 ]
 """
 paths = [
-    ('Water1', [bp+'6_111221_AC03V3ACXX_JL16_index4_1.fastq.gz', bp+'6_111221_AC03V3ACXX_JL16_index4_2.fastq.gz']),
-    ('Water2', [bp+'6_111221_AC03V3ACXX_JL17_index5_1.fastq.gz', bp+'6_111221_AC03V3ACXX_JL17_index5_2.fastq.gz']),
-    ('Water4', [bp+'6_111221_AC03V3ACXX_JL18_index6_1.fastq.gz', bp+'6_111221_AC03V3ACXX_JL18_index6_2.fastq.gz']),
-    ('Water6', [bp+'7_111221_AC03V3ACXX_JL19_index7_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL19_index7_2.fastq.gz', bp+'1_120228_AD0J14ACXX_JL19_index7_1.fastq.gz', bp+'1_120228_AD0J14ACXX_JL19_index7_2.fastq.gz']),
-    ('Water7', [bp+'7_111221_AC03V3ACXX_JL20_index8_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL20_index8_2.fastq.gz']),
-    ('Water8', [bp+'7_111221_AC03V3ACXX_JL21_index9_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL21_index9_2.fastq.gz']),
-    ('Water9', [bp+'7_111221_AC03V3ACXX_JL22_index10_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL22_index10_2.fastq.gz']),
-    ('Water10', [bp+'7_111221_AC03V3ACXX_JL23_index11_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL23_index11_2.fastq.gz']),
-    ('Water11', [bp+'7_111221_AC03V3ACXX_JL24_index12_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL24_index12_2.fastq.gz']),
+#    ('Water1', [bp+'6_111221_AC03V3ACXX_JL16_index4_1.fastq.gz', bp+'6_111221_AC03V3ACXX_JL16_index4_2.fastq.gz']),
+#    ('Water2', [bp+'6_111221_AC03V3ACXX_JL17_index5_1.fastq.gz', bp+'6_111221_AC03V3ACXX_JL17_index5_2.fastq.gz']),
+#    ('Water4', [bp+'6_111221_AC03V3ACXX_JL18_index6_1.fastq.gz', bp+'6_111221_AC03V3ACXX_JL18_index6_2.fastq.gz']),
+#    ('Water6', [bp+'7_111221_AC03V3ACXX_JL19_index7_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL19_index7_2.fastq.gz', bp+'1_120228_AD0J14ACXX_JL19_index7_1.fastq.gz', bp+'1_120228_AD0J14ACXX_JL19_index7_2.fastq.gz']),
+#    ('Water7', [bp+'7_111221_AC03V3ACXX_JL20_index8_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL20_index8_2.fastq.gz']),
+#    ('Water8', [bp+'7_111221_AC03V3ACXX_JL21_index9_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL21_index9_2.fastq.gz']),
+#    ('Water9', [bp+'7_111221_AC03V3ACXX_JL22_index10_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL22_index10_2.fastq.gz']),
+#    ('Water10', [bp+'7_111221_AC03V3ACXX_JL23_index11_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL23_index11_2.fastq.gz']),
+#    ('Water11', [bp+'7_111221_AC03V3ACXX_JL24_index12_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL24_index12_2.fastq.gz']),
     ('Water13', [bp+'1_120228_AD0J14ACXX_JL25_index10_1.fastq.gz', bp+'1_120228_AD0J14ACXX_JL25_index10_2.fastq.gz']),
-    ('Water14', [bp+'6_120404_BD0MGRACXX_L26_index2_1.fastq.gz', bp+'6_120404_BD0MGRACXX_L26_index2_2.fastq.gz']),
+#    ('Water14', [bp+'6_120404_BD0MGRACXX_L26_index2_1.fastq.gz', bp+'6_120404_BD0MGRACXX_L26_index2_2.fastq.gz']),
 ]
 #paths = [('ntsmall', ['tutorial/database/ntsmallest1_plus_qnr.nfa', 'tutorial/database/ntsmallest2_plus_qnr.nfa'])]
     #('', [bp+'.gz', bp+'.gz']),
@@ -65,10 +65,11 @@ def run(dir, inpath):
                 (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/joint.hmm', 'hmmsearch_out': dir+'/hmmsearch_outj', 'write_only_domain': False}),
                 [
                     (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classA.hmm', 'hmmsearch_out': dir+'/hmmsearch_outa', 'write_only_domain': True}),
+                    (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classB.hmm', 'hmmsearch_out': dir+'/hmmsearch_outb', 'write_only_domain': True}),
                     (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classC.hmm', 'hmmsearch_out': dir+'/hmmsearch_outc', 'write_only_domain': True}),
                     (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/classD.hmm', 'hmmsearch_out': dir+'/hmmsearch_outd', 'write_only_domain': True})
                 ],
-                (sga, {'error_rate': 0.01, 'min_assembly_overlap': 30, 'min_merge_overlap': 25, 'resolve_small': 10, 'parse_output': False  })
+                (sga, {'error_rate': 0.05, 'min_assembly_overlap': 20, 'min_merge_overlap': 20, 'resolve_small': 5, 'parse_output': False  })
             ],
             ['', dir+'/fragments.db', dir+'/fragments_passed.db', dir+'/fragments_passed_second.db',dir+'/clusters.db'],   #dbs
             [inpath, dir+'/dnareader.pfa', dir+'/fragments_passed.pfa', dir+'/fragments_passed_second.nfa',dir+'/clusters.nfa'],   #files
