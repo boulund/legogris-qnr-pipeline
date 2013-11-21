@@ -10,14 +10,14 @@ from db import level
 
 _PROFILE = True
 
-bp = '/lagring/boulund/johan_bengtsson/indien-scilife2011/'
+bp = '/storage/edstromr/genomes/indien-scilife2011/'
 paths = [
-#    ('R1', [bp+'8_111221_AC03V3ACXX_JL27_index3_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL27_index3_1.fastq.gz']),
-#    ('R2', [bp+'7_111221_AC03V3ACXX_JL28_index4_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL28_index4_2.fastq.gz']),
-#    ('R3', [bp+'8_111221_AC03V3ACXX_JL29_index6_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL29_index6_2.fastq.gz']),
-#    ('R4', [bp+'3_120228_AD0J14ACXX_JL30_index20_1.fastq.gz', bp+'3_120228_AD0J14ACXX_JL30_index20_2.fastq.gz']),
+    ('R1', [bp+'8_111221_AC03V3ACXX_JL27_index3_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL27_index3_1.fastq.gz']),
+    ('R2', [bp+'7_111221_AC03V3ACXX_JL28_index4_1.fastq.gz', bp+'7_111221_AC03V3ACXX_JL28_index4_2.fastq.gz']),
+    ('R3', [bp+'8_111221_AC03V3ACXX_JL29_index6_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL29_index6_2.fastq.gz']),
+    ('R4', [bp+'3_120228_AD0J14ACXX_JL30_index20_1.fastq.gz', bp+'3_120228_AD0J14ACXX_JL30_index20_2.fastq.gz']),
     ('R5', [bp+'8_111221_AC03V3ACXX_JL31_index8_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL31_index8_2.fastq.gz']),
-#    ('R6', [bp+'8_111221_AC03V3ACXX_JL32_index9_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL32_index9_2.fastq.gz'])
+    ('R6', [bp+'8_111221_AC03V3ACXX_JL32_index9_1.fastq.gz', bp+'8_111221_AC03V3ACXX_JL32_index9_2.fastq.gz'])
 ]
 """
 paths = [
@@ -61,14 +61,14 @@ def run(dir, inpath):
         run_sieves(
             [
                 (dnareader, {'item_limit': 0}),
-                (hmmsearch, {'model_path': sys.path[0]+'/model.hmm', 'hmmsearch_out': dir+'/hmmsearch_out', 'write_only_domain': True}),
+                (hmmsearch, {'model_path': sys.path[0]+'/hmm_models/model.hmm', 'hmmsearch_out': dir+'/hmmsearch_out', 'write_only_domain': True}),
                 (sga, {'error_rate': 0.05, 'min_assembly_overlap': 20, 'min_merge_overlap': 20, 'resolve_small': 5 })
             ],
             ['', dir+'/fragments.db', dir+'/fragments_passed.db', dir+'/clusters.db'],   #dbs
             [inpath, dir+'/dnareader.pfa', dir+'/fragments_passed.nfa', dir+'/clusters.nfa'],   #files
             logfile,
             level,
-            2,3
+            0,2
         )
     finally:
         logfile.close()
